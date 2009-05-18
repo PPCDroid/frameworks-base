@@ -624,7 +624,7 @@ int EventHub::open_device(const char *deviceName)
         int err;
         char keylayoutFilename[300];
 
-        sprintf(propName, "hw.keylayout.%u", device->id);
+        sprintf(propName, "hw.keylayout");
         err = property_get(propName, tmpfn, "");
         if (err <= 0) {
             // a more descriptive name
