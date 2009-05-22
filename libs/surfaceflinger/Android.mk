@@ -35,6 +35,10 @@ else
 LOCAL_CFLAGS += -DSURFACEFLINGER_HEAP_MAX=8
 endif
 
+ifeq ($(TARGET_ARCH),mips)
+LOCAL_CFLAGS += -DSIGUNUSED=20
+endif
+
 LOCAL_SHARED_LIBRARIES := \
 	libhardware \
 	libutils \

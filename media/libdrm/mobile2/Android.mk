@@ -76,4 +76,8 @@ ifeq ($(TARGET_OS)-$(TARGET_ARCH),linux-x86)
 LOCAL_CFLAGS += -DUSTL_ANDROID_X86
 endif
 
+ifeq ($(TARGET_OS)-$(TARGET_ARCH),linux-mips)
+LOCAL_CFLAGS += -DUSTL_ANDROID_MIPS
+endif
+
 include $(BUILD_STATIC_LIBRARY)
