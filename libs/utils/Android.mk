@@ -43,7 +43,9 @@ commonSources:= \
 	ZipUtils.cpp \
 	misc.cpp \
 	ported.cpp \
-	LogSocket.cpp
+	LogSocket.cpp \
+	IBatteryServiceStatus.cpp \
+	BatteryServiceStatus.cpp
 
 #
 # The cpp files listed here do not belong in the device
