@@ -97,8 +97,9 @@ AudioHardwareInterface* AudioHardwareInterface::create()
     hw = new AudioHardwareGeneric();
 #else
     // if running in emulation - use the emulator driver
-    if (property_get("ro.kernel.qemu", value, 0)) {
-        LOGD("Running in emulation - using generic audio driver");
+    property_get("ro.product.board", value, "");
+    if (!strncmp(value, "goldfish", 8)) {
+        LOGD("Running in ARM emulation - using generic audio driver");
         hw = new AudioHardwareGeneric();
     }
     else {
