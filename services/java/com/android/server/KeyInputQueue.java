@@ -31,6 +31,9 @@ import android.view.WindowManagerPolicy;
 
 public abstract class KeyInputQueue {
     static final String TAG = "KeyInputQueue";
+    static final int UPKEY_KEYWORD = 19;
+    static final int DOWNKEY_KEYWORD = 20;
+
 
     SparseArray<InputDevice> mDevices = new SparseArray<InputDevice>();
     
@@ -271,7 +274,11 @@ public abstract class KeyInputQueue {
                         final int scancode = ev.scancode;
                         send = false;
                         
-                        // Is it a key event?
+			if(false){
+			    Log.i(TAG, "Device class : " + classes + "; Event type: " + type +
+				  "; Scancode: " + scancode + " Value: " + ev.value + "; keycode: " + ev.keycode);
+			}
+			// Is it a key event?
                         if (type == RawInputEvent.EV_KEY &&
                                 (classes&RawInputEvent.CLASS_KEYBOARD) != 0 &&
                                 (scancode < RawInputEvent.BTN_FIRST ||
@@ -321,9 +328,8 @@ public abstract class KeyInputQueue {
                                 di.mAbs.changed = true;
                                 di.mAbs.size = ev.value;
                             }
-    
                         } else if (ev.type == RawInputEvent.EV_REL ) {
-                            if ((classes&RawInputEvent.CLASS_TRACKBALL) != 0) {
+			    if ((classes&RawInputEvent.CLASS_TRACKBALL) != 0) {
                                 // Add this relative movement into our totals.
                                 if (ev.scancode == RawInputEvent.REL_X) {
                                     di.mRel.changed = true;
@@ -333,26 +339,51 @@ public abstract class KeyInputQueue {
                                     di.mRel.y += ev.value;
                                 }
                             } else if ((classes&RawInputEvent.CLASS_MOUSE) != 0) {
-                                    if (ev.scancode == RawInputEvent.REL_X) {
-                                        di.mAbs.changed = true;
-                                        mCx = mCx + (int)ev.value;
-                                        mCx = ((mCx < 0) ? 0 :(mCx >= mDisplay.getWidth() ?(mDisplay.getWidth()-1):mCx));
-                                        di.mAbs.x = mCx;
-                                    } else if (ev.scancode == RawInputEvent.REL_Y) {
-                                        di.mAbs.changed = true;
-                                        mCy = mCy + (int)ev.value;
-                                        mCy = ((mCy < 0) ? 0 :(mCy >= mDisplay.getHeight()?(mDisplay.getHeight() - 1):mCy));
-                                        di.mAbs.y = mCy;
-                                    }
-                                }
-                        }
-                        
+				// Log.i(TAG, "Reaches Mouse X,Y code");
+				if (ev.scancode == RawInputEvent.REL_X) {
+				    di.mAbs.changed = true;
+				    mCx = mCx + (int)ev.value;
+				    mCx = ((mCx < 0) ? 0 :(mCx >= mDisplay.getWidth() ?(mDisplay.getWidth()-1):mCx));
+				    di.mAbs.x = mCx;
+				} else if (ev.scancode == RawInputEvent.REL_Y) {
+				    di.mAbs.changed = true;
+				    mCy = mCy + (int)ev.value;
+				    mCy = ((mCy < 0) ? 0 :(mCy >= mDisplay.getHeight()?(mDisplay.getHeight() - 1):mCy));
+				    di.mAbs.y = mCy;
+				} else if ((classes&RawInputEvent.CLASS_MOUSE)  != 0) {
+				    // Log.i(TAG,"Reaches Mouse Wheel code");
+				    if (ev.scancode == RawInputEvent.REL_WHEEL){
+					boolean down;
+					int keycode;
+					if (ev.value != 0) {
+					    down = true;
+					    di.mDownTime = curTime;
+					}
+					else {
+					    down = false;
+					}
+					if (ev.value < 0){
+					    keycode = rotateKeyCodeLocked(DOWNKEY_KEYWORD);
+					} else if(ev.value > 0){
+					    keycode = rotateKeyCodeLocked(UPKEY_KEYWORD);
+					} else {
+					    keycode = rotateKeyCodeLocked(ev.keycode);
+					}
+					addLocked(di, curTime, ev.flags,
+						  RawInputEvent.CLASS_KEYBOARD,
+						  newKeyEvent(di, di.mDownTime, curTime, down,
+							      keycode, 0, scancode,
+							      ((ev.flags & WindowManagerPolicy.FLAG_WOKE_HERE) != 0)
+							      ? KeyEvent.FLAG_WOKE_HERE : 0));
+				    }
+				}
+			    }
+			}
                         if (send || ev.type == RawInputEvent.EV_SYN) {
                             if (mDisplay != null) {
                                 if (!mHaveGlobalMetaState) {
                                     computeGlobalMetaStateLocked();
                                 }
-                                
                                 MotionEvent me;
                                 me = di.mAbs.generateMotion(di, curTime, true,
                                         mDisplay, mOrientation, mGlobalMetaState);
