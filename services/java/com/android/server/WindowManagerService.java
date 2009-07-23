@@ -4469,6 +4469,9 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
             long keyDispatchingTimeout = 5 * 1000;
             long waitedFor = 0;
 
+            if ("silverbox".equals(
+                            SystemProperties.get("ro.product.board", "")))
+                keyDispatchingTimeout = 15 * 1000;
             while (true) {
                 // Figure out which window we care about.  It is either the
                 // last window we are waiting to have process the event or,
