@@ -375,6 +375,12 @@ public abstract class KeyInputQueue {
 							      keycode, 0, scancode,
 							      ((ev.flags & WindowManagerPolicy.FLAG_WOKE_HERE) != 0)
 							      ? KeyEvent.FLAG_WOKE_HERE : 0));
+					addLocked(di, curTime, ev.flags,
+						  RawInputEvent.CLASS_KEYBOARD,
+						  newKeyEvent(di, di.mDownTime, curTime, !down,
+							      keycode, 0, scancode,
+							      ((ev.flags & WindowManagerPolicy.FLAG_WOKE_HERE) != 0)
+							      ? KeyEvent.FLAG_WOKE_HERE : 0));
 				    }
 				}
 			    }
