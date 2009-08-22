@@ -80,4 +80,8 @@ ifeq ($(TARGET_OS)-$(TARGET_ARCH),linux-mips)
 LOCAL_CFLAGS += -DUSTL_ANDROID_MIPS
 endif
 
+ifeq ($(TARGET_OS)-$(TARGET_ARCH),linux-ppc)
+LOCAL_CFLAGS += -DUSTL_ANDROID_PPC
+endif
+
 include $(BUILD_STATIC_LIBRARY)
