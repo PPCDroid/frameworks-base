@@ -11,7 +11,7 @@ LOCAL_SRC_FILES:= \
     onload.cpp
 
 LOCAL_C_INCLUDES += \
-	$(JNI_H_INCLUDE)
+	$(JNI_H_INCLUDE) external/tslib/src
 
 LOCAL_SHARED_LIBRARIES := \
 	libcutils \

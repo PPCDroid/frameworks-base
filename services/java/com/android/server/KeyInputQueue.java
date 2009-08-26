@@ -214,7 +214,7 @@ public abstract class KeyInputQueue {
                                 + " keycode=" + ev.keycode
                                 + " value=" + ev.value);
                     }
-                    
+
                     if (ev.type == RawInputEvent.EV_DEVICE_ADDED) {
                         synchronized (mFirst) {
                             di = newInputDevice(ev.deviceId);
@@ -384,6 +384,15 @@ public abstract class KeyInputQueue {
 				    }
 				}
 			    }
+			} else if (ev.type == RawInputEvent.EV_TS) {
+                            di.mAbs.x = ev.x;
+                            di.mAbs.y = ev.y;
+                            di.mAbs.pressure = ev.pressure;
+                            di.mAbs.down = ev.pressure != 0;// simulate
+                                                            // key down on
+                                                            // pressure
+                            di.mAbs.changed = true;
+                            send = true;
 			}
                         if (send || ev.type == RawInputEvent.EV_SYN) {
                             if (mDisplay != null) {

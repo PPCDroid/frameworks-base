@@ -24,6 +24,8 @@
 
 #include <linux/input.h>
 
+#include <ui/IInputDriver.h>
+
 struct pollfd;
 
 namespace android {
@@ -74,15 +76,14 @@ public:
     // special type codes when devices are added/removed.
     enum {
         DEVICE_ADDED = 0x10000000,
-        DEVICE_REMOVED = 0x20000000
+        DEVICE_REMOVED = 0x20000000,
+	EV_TS = 0x30000000,
     };
     
     // examine key input devices for specific framework keycode support
     bool hasKeys(size_t numCodes, int32_t* keyCodes, uint8_t* outFlags);
 
-    virtual bool getEvent(int32_t* outDeviceId, int32_t* outType,
-            int32_t* outScancode, int32_t* outKeycode, uint32_t *outFlags,
-            int32_t* outValue, nsecs_t* outWhen);
+    virtual bool getEvent(InEvent *inevt);
     
 protected:
     virtual ~EventHub();
@@ -111,6 +112,7 @@ private:
         
         device_t(int32_t _id, const char* _path);
         ~device_t();
+	    IInputDriver *driver;
     };
 
     device_t* getDevice(int32_t deviceId) const;

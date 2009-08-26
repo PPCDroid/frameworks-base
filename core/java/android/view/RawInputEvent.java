@@ -37,6 +37,7 @@ public class RawInputEvent {
     
     public static final int EV_DEVICE_ADDED = 0x10000000;
     public static final int EV_DEVICE_REMOVED = 0x20000000;
+    public static final int EV_TS = 0x30000000;
     
     // Special key (EV_KEY) scan codes for pointer buttons.
 
@@ -168,4 +169,9 @@ public class RawInputEvent {
     public int flags;
     public int value;
     public long when;
+
+    /* TSlib specific stuff*/
+    public int x;
+    public int y;
+    public int pressure;
 }

@@ -17,6 +17,7 @@ LOCAL_SRC_FILES:= \
 	ISurfaceComposer.cpp \
 	ISurface.cpp \
 	ISurfaceFlingerClient.cpp \
+	ITSLib.cpp \
 	LayerState.cpp \
 	Overlay.cpp \
 	PixelFormat.cpp \
@@ -26,13 +27,16 @@ LOCAL_SRC_FILES:= \
 	SurfaceComposerClient.cpp \
 	SurfaceFlingerSynchro.cpp 
 
+LOCAL_C_INCLUDES += external/tslib/src
+
 LOCAL_SHARED_LIBRARIES := \
 	libcorecg \
 	libcutils \
 	libutils \
 	libpixelflinger \
 	libhardware \
-	libhardware_legacy
+	libhardware_legacy \
+	libts
 
 LOCAL_MODULE:= libui
 

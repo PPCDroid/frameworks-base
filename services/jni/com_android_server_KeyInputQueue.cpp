@@ -44,6 +44,10 @@ static struct input_offsets_t
     jfieldID mFlags;
     jfieldID mValue;
     jfieldID mWhen;
+
+    jfieldID mX;
+    jfieldID mY;
+    jfieldID mPressure;
 } gInputOffsets;
 
 // ----------------------------------------------------------------------------
@@ -55,6 +59,8 @@ static jboolean
 android_server_KeyInputQueue_readEvent(JNIEnv* env, jobject clazz,
                                           jobject event)
 {
+    InEvent inevt;
+
     gLock.lock();
     sp<EventHub> hub = gHub;
     if (hub == NULL) {
@@ -63,23 +69,19 @@ android_server_KeyInputQueue_readEvent(JNIEnv* env, jobject clazz,
     }
     gLock.unlock();
 
-    int32_t deviceId;
-    int32_t type;
-    int32_t scancode, keycode;
-    uint32_t flags;
-    int32_t value;
-    nsecs_t when;
-    bool res = hub->getEvent(&deviceId, &type, &scancode, &keycode,
-            &flags, &value, &when);
+    bool res = hub->getEvent(&inevt);
 
-    env->SetIntField(event, gInputOffsets.mDeviceId, (jint)deviceId);
-    env->SetIntField(event, gInputOffsets.mType, (jint)type);
-    env->SetIntField(event, gInputOffsets.mScancode, (jint)scancode);
-    env->SetIntField(event, gInputOffsets.mKeycode, (jint)keycode);
-    env->SetIntField(event, gInputOffsets.mFlags, (jint)flags);
-    env->SetIntField(event, gInputOffsets.mValue, value);
+    env->SetIntField(event, gInputOffsets.mDeviceId, (jint)inevt.DeviceId);
+    env->SetIntField(event, gInputOffsets.mType, (jint)inevt.Type);
+    env->SetIntField(event, gInputOffsets.mScancode, (jint)inevt.Scancode);
+    env->SetIntField(event, gInputOffsets.mKeycode, (jint)inevt.Keycode);
+    env->SetIntField(event, gInputOffsets.mFlags, (jint)inevt.Flags);
+    env->SetIntField(event, gInputOffsets.mValue, inevt.Value);
     env->SetLongField(event, gInputOffsets.mWhen,
-                        (jlong)(nanoseconds_to_milliseconds(when)));
+                        (jlong)(nanoseconds_to_milliseconds(inevt.When)));
+    env->SetIntField(event, gInputOffsets.mX, (jint)inevt.X);
+    env->SetIntField(event, gInputOffsets.mY, (jint)inevt.Y);
+    env->SetIntField(event, gInputOffsets.mPressure, inevt.Pressure);
 
     return res;
 }
@@ -312,6 +314,19 @@ int register_android_server_KeyInputQueue(JNIEnv* env)
     gInputOffsets.mWhen
         = env->GetFieldID(inputEvent, "when", "J");
     LOG_FATAL_IF(gInputOffsets.mWhen == NULL, "Unable to find RawInputEvent.when");
+
+    gInputOffsets.mX
+        = env->GetFieldID(inputEvent, "x", "I");
+    LOG_FATAL_IF(gInputOffsets.mType == NULL, "Unable to find RawInputEvent.type");
+
+    gInputOffsets.mY
+        = env->GetFieldID(inputEvent, "y", "I");
+    LOG_FATAL_IF(gInputOffsets.mScancode == NULL, "Unable to find RawInputEvent.scancode");
+
+    gInputOffsets.mPressure
+        = env->GetFieldID(inputEvent, "pressure", "I");
+    LOG_FATAL_IF(gInputOffsets.mKeycode == NULL, "Unable to find RawInputEvent.keycode");
+
 
     return res;
 }

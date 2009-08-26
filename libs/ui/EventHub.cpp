@@ -16,6 +16,7 @@
 //#define LOG_NDEBUG 0
 
 #include <ui/EventHub.h>
+#include <ui/ITSLib.h>
 #include <hardware_legacy/power.h>
 
 #include <cutils/properties.h>
@@ -71,7 +72,7 @@ static inline int max(int v1, int v2)
 
 EventHub::device_t::device_t(int32_t _id, const char* _path)
     : id(_id), path(_path), classes(0)
-    , keyBitmask(NULL), layoutMap(new KeyLayoutMap()), next(NULL) {
+    , keyBitmask(NULL), layoutMap(new KeyLayoutMap()), next(NULL),driver(NULL) {
 }
 
 EventHub::device_t::~device_t() {
@@ -252,18 +253,8 @@ EventHub::device_t* EventHub::getDevice(int32_t deviceId) const
     return NULL;
 }
 
-bool EventHub::getEvent(int32_t* outDeviceId, int32_t* outType,
-        int32_t* outScancode, int32_t* outKeycode, uint32_t *outFlags,
-        int32_t* outValue, nsecs_t* outWhen)
+bool EventHub::getEvent(InEvent *inevt)
 {
-    *outDeviceId = 0;
-    *outType = 0;
-    *outScancode = 0;
-    *outKeycode = 0;
-    *outFlags = 0;
-    *outValue = 0;
-    *outWhen = 0;
-
     status_t err;
 
     fd_set readfds;
@@ -273,6 +264,7 @@ bool EventHub::getEvent(int32_t* outDeviceId, int32_t* outType,
     int res;
     int pollres;
     struct input_event iev;
+    memset(inevt, 0, sizeof(*inevt));
 
     // Note that we only allow one caller to getEvent(), so don't need
     // to do locking here...  only when adding/removing devices.
@@ -285,9 +277,9 @@ bool EventHub::getEvent(int32_t* outDeviceId, int32_t* outType,
             LOGV("Reporting device closed: id=0x%x, name=%s\n",
                  device->id, device->path.string());
             mClosingDevices = device->next;
-            *outDeviceId = device->id;
-            if (*outDeviceId == mFirstKeyboardId) *outDeviceId = 0;
-            *outType = DEVICE_REMOVED;
+            inevt->DeviceId = device->id;
+            if (inevt->DeviceId == mFirstKeyboardId) inevt->DeviceId = 0;
+            inevt->Type = DEVICE_REMOVED;
             delete device;
             return true;
         }
@@ -296,9 +288,9 @@ bool EventHub::getEvent(int32_t* outDeviceId, int32_t* outType,
             LOGV("Reporting device opened: id=0x%x, name=%s\n",
                  device->id, device->path.string());
             mOpeningDevices = device->next;
-            *outDeviceId = device->id;
-            if (*outDeviceId == mFirstKeyboardId) *outDeviceId = 0;
-            *outType = DEVICE_ADDED;
+            inevt->DeviceId = device->id;
+            if (inevt->DeviceId == mFirstKeyboardId) inevt->DeviceId = 0;
+            inevt->Type = DEVICE_ADDED;
             return true;
         }
 
@@ -323,37 +315,51 @@ bool EventHub::getEvent(int32_t* outDeviceId, int32_t* outType,
             if(mFDs[i].revents) {
                 LOGV("revents for %d = 0x%08x", i, mFDs[i].revents);
                 if(mFDs[i].revents & POLLIN) {
-                    res = read(mFDs[i].fd, &iev, sizeof(iev));
-                    if (res == sizeof(iev)) {
-                        LOGV("%s got: t0=%d, t1=%d, type=%d, code=%d, v=%d",
-                             mDevices[i]->path.string(),
-                             (int) iev.time.tv_sec, (int) iev.time.tv_usec,
-                             iev.type, iev.code, iev.value);
-                        *outDeviceId = mDevices[i]->id;
-                        if (*outDeviceId == mFirstKeyboardId) *outDeviceId = 0;
-                        *outType = iev.type;
-                        *outScancode = iev.code;
-                        if (iev.type == EV_KEY) {
-                            err = mDevices[i]->layoutMap->map(iev.code, outKeycode, outFlags);
-                            LOGV("iev.code=%d outKeycode=%d outFlags=0x%08x err=%d\n",
-                                iev.code, *outKeycode, *outFlags, err);
-                            if (err != 0) {
-                                *outKeycode = 0;
-                                *outFlags = 0;
-                            }
-                        } else {
-                            *outKeycode = iev.code;
-                        }
-                        *outValue = iev.value;
-                        *outWhen = s2ns(iev.time.tv_sec) + us2ns(iev.time.tv_usec);
+                    if (mDevices[i]->driver) {
+                        if (mDevices[i]->driver->GetEvent(inevt))
+                            continue;
+                        inevt->DeviceId = mDevices[i]->id; //XXX
                         return true;
                     } else {
-                        if (res<0) {
-                            LOGW("could not get event (errno=%d)", errno);
+                        res = read(mFDs[i].fd, &iev, sizeof(iev));
+                        if (res == sizeof(iev)) {
+                            LOGV("%s got: t0=%d, t1=%d, type=%d, code=%d, v=%d",
+                                 mDevices[i]->path.string(),
+                                 (int) iev.time.tv_sec, (int) iev.time.tv_usec,
+                                 iev.type, iev.code, iev.value);
+                            inevt->DeviceId = mDevices[i]->id;
+                            if (inevt->DeviceId == mFirstKeyboardId)
+                                inevt->DeviceId = 0;
+                            inevt->Type = iev.type;
+                            inevt->Scancode = iev.code;
+                            if (iev.type == EV_KEY) {
+                                err = mDevices[i]->layoutMap->map(iev.code,
+                                        &inevt->Keycode,
+                                        &inevt->Flags);
+                                LOGV("iev.code=%d outKeycode=%d outFlags=0x%08x"
+                                                " err=%d\n", iev.code,
+                                                inevt->Keycode, inevt->Flags,
+                                                err);
+                                if (err != 0) {
+                                    inevt->Keycode = 0;
+                                    inevt->Flags = 0;
+                                }
+                            } else {
+                                inevt->Keycode = iev.code;
+                            }
+                            inevt->Value = iev.value;
+                            inevt->When = s2ns(iev.time.tv_sec) +
+                                    us2ns(iev.time.tv_usec);
+                            return true;
                         } else {
-                            LOGE("could not get event (wrong size: %d)", res);
+                            if (res<0) {
+                                LOGW("could not get event (errno=%d)", errno);
+                            } else {
+                                LOGE("could not get event (wrong size: %d)",
+                                                res);
+                            }
+                            continue;
                         }
-                        continue;
                     }
                 }
             }
@@ -594,6 +600,16 @@ int EventHub::open_device(const char *deviceName)
         {
             if (test_bit(ABS_X, abs_bitmask) && test_bit(ABS_Y, abs_bitmask)) {
                 device->classes |= CLASS_TOUCHSCREEN;
+
+                //Attach TSlib if possible
+                device->driver = new ITSLib(fd);
+                if (device->driver && !device->driver->Initialize()) {
+                    delete device->driver;
+                    device->driver =  NULL;
+                    LOGE("Unable to use TSLib");
+                } else {
+                    LOGE("TSLib is used to handle TouchScreen events");
+                }
             }
         }
     }
