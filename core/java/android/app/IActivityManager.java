@@ -80,6 +80,10 @@ public interface IActivityManager extends IInterface {
             Intent intent, String resolvedType, Uri[] grantedUriPermissions,
             int grantedMode, IBinder resultTo, String resultWho, int requestCode,
             boolean onlyIfNeeded, boolean debug) throws RemoteException;
+    public int startActivity(IApplicationThread caller,
+            Intent intent, String resolvedType, Uri[] grantedUriPermissions,
+            int grantedMode, IBinder resultTo, String resultWho, int requestCode,
+            boolean onlyIfNeeded, boolean debug, int gdbPort) throws RemoteException;
     public boolean startNextMatchingActivity(IBinder callingActivity,
             Intent intent) throws RemoteException;
     public boolean finishActivity(IBinder token, int code, Intent data)
@@ -199,7 +203,7 @@ public interface IActivityManager extends IInterface {
     public void revokeUriPermission(IApplicationThread caller, Uri uri,
             int mode) throws RemoteException;
     
-    public void showWaitingForDebugger(IApplicationThread who, boolean waiting)
+    public void showWaitingForDebugger(IApplicationThread who, boolean nativeDebugger, boolean waiting)
             throws RemoteException;
     
     public void getMemoryInfo(ActivityManager.MemoryInfo outInfo) throws RemoteException;

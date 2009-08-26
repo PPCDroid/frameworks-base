@@ -80,6 +80,10 @@ public interface IApplicationThread extends IInterface {
             ComponentName testName, String profileName, Bundle testArguments, 
             IInstrumentationWatcher testWatcher, int debugMode, boolean restrictedBackupMode,
             Configuration config, Map<String, IBinder> services) throws RemoteException;
+    void bindApplication(String packageName, ApplicationInfo info, List<ProviderInfo> providers,
+            ComponentName testName, String profileName, Bundle testArguments, 
+            IInstrumentationWatcher testWatcher, int debugMode, boolean restrictedBackupMode,
+            Configuration config, Map<String, IBinder> services, int gdbPort) throws RemoteException;
     void scheduleExit() throws RemoteException;
     void requestThumbnail(IBinder token) throws RemoteException;
     void scheduleConfigurationChanged(Configuration config) throws RemoteException;

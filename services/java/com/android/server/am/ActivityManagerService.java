@@ -842,10 +842,12 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
     boolean mDidDexOpt;
     
     String mDebugApp = null;
+    int mGdbPort = -1;
     boolean mWaitForDebugger = false;
     boolean mDebugTransient = false;
     String mOrigDebugApp = null;
     boolean mOrigWaitForDebugger = false;
+    int mOrigGdbPort = -1;
     boolean mAlwaysFinishActivities = false;
     IActivityController mController = null;
 
@@ -1024,7 +1026,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                         if (!app.waitedForDebugger) {
                             Dialog d = new AppWaitingForDebuggerDialog(
                                     ActivityManagerService.this,
-                                    mContext, app);
+                                    mContext, app, msg.arg2 != 0);
                             app.waitDialog = d;
                             app.waitedForDebugger = true;
                             d.show();
@@ -3542,6 +3544,15 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             int grantedMode, IBinder resultTo,
             String resultWho, int requestCode, boolean onlyIfNeeded,
             boolean debug) {
+	return startActivity ( caller, intent, resolvedType, grantedUriPermissions,
+		grantedMode, resultTo, resultWho, requestCode, onlyIfNeeded,
+		debug, -1 );
+    }
+    public final int startActivity(IApplicationThread caller,
+            Intent intent, String resolvedType, Uri[] grantedUriPermissions,
+            int grantedMode, IBinder resultTo,
+            String resultWho, int requestCode, boolean onlyIfNeeded,
+            boolean debug, int gdbPort) {
         // Refuse possible leaked file descriptors
         if (intent != null && intent.hasFileDescriptors()) {
             throw new IllegalArgumentException("File descriptors passed in Intent");
@@ -3574,9 +3585,9 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                     aInfo.applicationInfo.packageName, aInfo.name));
 
             // Don't debug things in the system process
-            if (debug) {
+            if (debug || gdbPort>0 ) {
                 if (!aInfo.processName.equals("system")) {
-                    setDebugApp(aInfo.processName, true, false);
+                    setDebugApp(aInfo.processName, debug, gdbPort, false);
                 }
             }
         }
@@ -5107,13 +5118,16 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             TAG, "New app record " + app
             + " thread=" + thread.asBinder() + " pid=" + pid);
         try {
+	    int gdbPort = -1;
             int testMode = IApplicationThread.DEBUG_OFF;
             if (mDebugApp != null && mDebugApp.equals(processName)) {
                 testMode = mWaitForDebugger
                     ? IApplicationThread.DEBUG_WAIT
                     : IApplicationThread.DEBUG_ON;
                 app.debugging = true;
+		gdbPort = mGdbPort;
                 if (mDebugTransient) {
+                    mGdbPort = mOrigGdbPort;
                     mDebugApp = mOrigDebugApp;
                     mWaitForDebugger = mOrigWaitForDebugger;
                 }
@@ -5134,7 +5148,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
                     ? app.instrumentationInfo : app.info, providers,
                     app.instrumentationClass, app.instrumentationProfileFile,
                     app.instrumentationArguments, app.instrumentationWatcher, testMode, 
-                    isRestrictedBackupMode, mConfiguration, getCommonServicesLocked());
+                    isRestrictedBackupMode, mConfiguration, getCommonServicesLocked(), gdbPort);
             updateLRUListLocked(app, false);
             app.lastRequestedGc = app.lastLowMemory = SystemClock.uptimeMillis();
         } catch (Exception e) {
@@ -6272,7 +6286,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
         }
     }
 
-    public void showWaitingForDebugger(IApplicationThread who, boolean waiting) {
+    public void showWaitingForDebugger(IApplicationThread who, boolean nativeDbg, boolean waiting) {
         synchronized (this) {
             ProcessRecord app =
                 who != null ? getRecordForAppLocked(who) : null;
@@ -6282,6 +6296,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             msg.what = WAIT_FOR_DEBUGGER_MSG;
             msg.obj = app;
             msg.arg1 = waiting ? 1 : 0;
+	    msg.arg2 = nativeDbg ? 1: 0;
             mHandler.sendMessage(msg);
         }
     }
@@ -7606,7 +7621,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
         synchronized (stats) {
             ps = stats.getProcessStatsLocked(info.uid, proc);
         }
-        return new ProcessRecord(ps, thread, info, proc);
+        return  new ProcessRecord(ps, thread, info, proc);
     }
 
     final ProcessRecord addAppLocked(ApplicationInfo info) {
@@ -7812,8 +7827,15 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
     
     public void setDebugApp(String packageName, boolean waitForDebugger,
             boolean persistent) {
+	setDebugApp(packageName, waitForDebugger, -1, persistent);
+    }
+
+    public void setDebugApp(String packageName, boolean waitForDebugger,
+            int gdbPort, boolean persistent) {
         enforceCallingPermission(android.Manifest.permission.SET_DEBUG_APP,
                 "setDebugApp()");
+	
+	Log.v(TAG,"startDebugApp(packageName="+packageName+" gdbPort="+gdbPort+")");
 
         // Note that this is not really thread safe if there are multiple
         // callers into it at the same time, but that's not a situation we
@@ -7832,9 +7854,11 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             if (!persistent) {
                 mOrigDebugApp = mDebugApp;
                 mOrigWaitForDebugger = mWaitForDebugger;
+		mOrigGdbPort = mGdbPort;
             }
             mDebugApp = packageName;
             mWaitForDebugger = waitForDebugger;
+	    mGdbPort = gdbPort;
             mDebugTransient = !persistent;
             if (packageName != null) {
                 final long origId = Binder.clearCallingIdentity();
@@ -8117,6 +8141,8 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
         synchronized (this) {
             mDebugApp = mOrigDebugApp = debugApp;
             mWaitForDebugger = mOrigWaitForDebugger = waitForDebugger;
+	    mGdbPort = mOrigGdbPort = -1;
+	    Log.i(TAG,"retrievSettings(): debugApp="+debugApp);
             mAlwaysFinishActivities = alwaysFinishActivities;
             // This happens before any activities are started, so we can
             // change mConfiguration in-place.
@@ -8886,6 +8912,7 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
             pw.println("  mGoingToSleep=" + mGoingToSleep);
             pw.println("  mLaunchingActivity=" + mLaunchingActivity);
             pw.println("  mDebugApp=" + mDebugApp + "/orig=" + mOrigDebugApp
+                    + " mGdbPort=" + mGdbPort+"/orig="+ mOrigGdbPort 
                     + " mDebugTransient=" + mDebugTransient
                     + " mOrigWaitForDebugger=" + mOrigWaitForDebugger);
             pw.println("  mAlwaysFinishActivities=" + mAlwaysFinishActivities

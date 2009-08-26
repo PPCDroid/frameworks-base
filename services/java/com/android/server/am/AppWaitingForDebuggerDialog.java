@@ -26,7 +26,7 @@ class AppWaitingForDebuggerDialog extends BaseErrorDialog {
     private CharSequence mAppName;
     
     public AppWaitingForDebuggerDialog(ActivityManagerService service,
-            Context context, ProcessRecord app) {
+            Context context, ProcessRecord app, boolean nativeDbg) {
         super(context);
         mService = service;
         mProc = app;
@@ -45,13 +45,14 @@ class AppWaitingForDebuggerDialog extends BaseErrorDialog {
             text.append("Process ");
             text.append(app.processName);
         }
-
-        text.append(" is waiting for the debugger to attach.");
+	
+	
+        text.append(nativeDbg?"is waiting for the native debugge.":" is waiting for the debugger to attach.");
 
         setMessage(text.toString());
         setButton("Force Close", mHandler.obtainMessage(1, app));
-        setTitle("Waiting For Debugger");
-        getWindow().setTitle("Waiting For Debugger: " + app.info.processName);
+        setTitle(nativeDbg?"Waiting For Native Debugger":"Waiting For Debugger");
+        getWindow().setTitle((nativeDbg?"Waiting For Native Debugger: ":"Waiting For Debugger: ") + app.info.processName);
     }
     
     public void onStop() {

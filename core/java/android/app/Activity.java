@@ -2740,7 +2740,7 @@ public class Activity extends ContextThemeWrapper
                             intent, intent.resolveTypeIfNeeded(
                                     getContentResolver()),
                             null, 0,
-                            mToken, mEmbeddedID, requestCode, true, false);
+                            mToken, mEmbeddedID, requestCode, true, false, -1);
             } catch (RemoteException e) {
                 // Empty
             }
