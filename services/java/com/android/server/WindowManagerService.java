@@ -58,6 +58,7 @@ import android.content.pm.PackageManager;
 import android.content.res.CompatibilityInfo;
 import android.content.res.Configuration;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.Region;
@@ -107,6 +108,7 @@ import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.view.animation.Transformation;
+
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -8038,16 +8040,18 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
                                 PixelFormat.TRANSPARENT,
                                 Surface.FX_SURFACE_NORMAL);
                 mCanvas = mMouseSurface.lockCanvas(null);
-                mCanvas.drawColor(0x0);
-
-
-
+                Paint  tPaint = new Paint();
+                tPaint.setStyle(Paint.Style.STROKE);
+                tPaint.setStrokeWidth(2);
                 mPath.moveTo(0.0f,0.0f);
                 mPath.lineTo(16.0f, 0.0f);
                 mPath.lineTo(0.0f, 16.0f);
                 mPath.close();
+
                 mCanvas.clipPath(mPath);
-                mCanvas.drawColor(0x66666666);
+                mCanvas.drawColor(0xffffffff);
+                mCanvas.drawPath(mPath, tPaint);
+
 
                 mMouseSurface.unlockCanvasAndPost(mCanvas);
                 mMouseSurface.openTransaction();
