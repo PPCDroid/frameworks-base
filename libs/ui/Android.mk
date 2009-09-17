@@ -17,7 +17,6 @@ LOCAL_SRC_FILES:= \
 	ISurfaceComposer.cpp \
 	ISurface.cpp \
 	ISurfaceFlingerClient.cpp \
-	ITSLib.cpp \
 	LayerState.cpp \
 	Overlay.cpp \
 	PixelFormat.cpp \
@@ -27,8 +26,6 @@ LOCAL_SRC_FILES:= \
 	SurfaceComposerClient.cpp \
 	SurfaceFlingerSynchro.cpp 
 
-LOCAL_C_INCLUDES += external/tslib/src
-
 LOCAL_SHARED_LIBRARIES := \
 	libcorecg \
 	libcutils \
@@ -36,12 +33,18 @@ LOCAL_SHARED_LIBRARIES := \
 	libpixelflinger \
 	libhardware \
 	libhardware_legacy \
-	libts
 
 LOCAL_MODULE:= libui
 
 ifeq ($(strip $(BOARD_USES_MOUSE)),true)
 LOCAL_CFLAGS := -DBOARD_USES_MOUSE
+endif
+
+ifeq ($(strip $(BOARD_USES_TSLIB)),true)
+LOCAL_SRC_FILES += ITSLib.cpp
+LOCAL_C_INCLUDES += external/tslib/src
+LOCAL_SHARED_LIBRARIES += libts
+LOCAL_CFLAGS := -DBOARD_USES_TSLIB
 endif
 
 include $(BUILD_SHARED_LIBRARY)

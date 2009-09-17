@@ -1,5 +1,6 @@
 #ifndef __ITSLIB_H__
 #define __ITSLIB_H__
+#ifdef BOARD_USES_TSLIB
 
 #include <utils/threads.h>
 #include <utils.h>
@@ -28,4 +29,5 @@ private:
 
 }; //namespace android
 
+#endif // BOARD_USES_TSLIB
 #endif // __ITSLIB_H__

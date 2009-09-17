@@ -601,6 +601,7 @@ int EventHub::open_device(const char *deviceName)
             if (test_bit(ABS_X, abs_bitmask) && test_bit(ABS_Y, abs_bitmask)) {
                 device->classes |= CLASS_TOUCHSCREEN;
 
+#ifdef BOARD_USES_TSLIB
                 //Attach TSlib if possible
                 device->driver = new ITSLib(fd);
                 if (device->driver && !device->driver->Initialize()) {
@@ -610,6 +611,7 @@ int EventHub::open_device(const char *deviceName)
                 } else {
                     LOGE("TSLib is used to handle TouchScreen events");
                 }
+#endif
             }
         }
     }
