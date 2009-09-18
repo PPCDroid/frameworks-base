@@ -638,22 +638,17 @@ int EventHub::open_device(const char *deviceName)
     if ((device->classes&CLASS_KEYBOARD) != 0) {
         char devname[101];
         char tmpfn[101];
-        char propName[100];
-        int err;
         char keylayoutFilename[300];
 
-        sprintf(propName, "hw.keylayout.%u", device->id);
-        err = property_get(propName, tmpfn, "");
-        if (err <= 0) {
-            // a more descriptive name
-            ioctl(mFDs[mFDCount].fd, EVIOCGNAME(sizeof(devname)-1), devname);
-            devname[sizeof(devname)-1] = 0;
-            device->name = devname;
-            strcpy(tmpfn, devname);
-            // replace all the spaces with underscores
-            for (char *p = strchr(tmpfn, ' '); p && *p; p = strchr(tmpfn, ' '))
-                *p = '_';
-        }
+        // a more descriptive name
+        ioctl(mFDs[mFDCount].fd, EVIOCGNAME(sizeof(devname)-1), devname);
+        devname[sizeof(devname)-1] = 0;
+        device->name = devname;
+
+        // replace all the spaces with underscores
+        strcpy(tmpfn, devname);
+        for (char *p = strchr(tmpfn, ' '); p && *p; p = strchr(tmpfn, ' '))
+            *p = '_';
 
         // find the .kl file we need for this device
         const char* root = getenv("ANDROID_ROOT");
@@ -682,6 +677,7 @@ int EventHub::open_device(const char *deviceName)
                 mFirstKeyboardId = device->id;
             }
         }
+        char propName[100];
         sprintf(propName, "hw.keyboards.%u.devname", publicID);
         property_set(propName, devname);
 
