@@ -164,7 +164,7 @@ KeyCharacterMap::load(int id)
     int err;
     const char* root = getenv("ANDROID_ROOT");
 
-    sprintf(propName, "hw.keycharmap");
+    sprintf(propName, "hw.keycharmap.%u", id);
     err = property_get(propName, dev, "");
     if (err <= 0) {
         sprintf(propName, "hw.keyboards.%u.devname", id);
