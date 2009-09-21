@@ -568,7 +568,8 @@ private:
 // state
 // ----------------------------------------------------------------------------
 
-#ifdef HAVE_ANDROID_OS
+// #ifdef HAVE_ANDROID_OS
+#if USE_FAST_TLS_KEY
     // We have a dedicated TLS slot in bionic
     inline void setGlThreadSpecific(ogles_context_t *value) {
         ((uint32_t *)__get_tls())[TLS_SLOT_OPENGL] = (uint32_t)value;
