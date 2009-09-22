@@ -202,7 +202,14 @@ done:
     count = n;
 
 //    LOGI("reply: '%s'\n", cmd);
+#ifdef __powerpc__
+    /*NS: Installer class expect length to be little endian short*/
+    count = ((count&0xff)<<8)|((count>>8)&0xff);
     if (writex(s, &count, sizeof(count))) return -1;
+    count = ((count&0xff)<<8)|((count>>8)&0xff);
+#else
+    if (writex(s, &count, sizeof(count))) return -1;
+#endif
     if (writex(s, cmd, count)) return -1;
     return 0;
 }
@@ -240,6 +247,10 @@ int main(const int argc, const char *argv[]) {
                 LOGE("failed to read size\n");
                 break;
             }
+#ifdef __powerpc__
+	   /*NS: Installer sends command length as little endian short*/
+	   count = ((count&0xff)<<8)|((count>>8)&0xff);
+#endif
             if ((count < 1) || (count >= BUFFER_MAX)) {
                 LOGE("invalid size %d\n", count);
                 break;
