@@ -748,7 +748,10 @@ static void socket_write (JNIEnv *env, jobject object,
     if (env->ExceptionOccurred() != NULL) {
         return;
     }
-
+#ifdef __powerpc__
+    /*NS: make least-significant byte most significant byte*/
+    b = (b&0xff)<<24;
+#endif
     err = socket_write_all(env, object, fd, &b, 1);
 
     // A return of -1 above means an exception is pending
