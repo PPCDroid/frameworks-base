@@ -4,19 +4,12 @@
 #include <cutils/properties.h>
 
 #include <utils/Log.h>
-#include <sys/endian.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
-
-#ifdef __powerpc__
-#define letoh32(v) __swap32(v)
-#else
-#define letoh32(v) (v)
-#endif
 
 struct Header
 {
@@ -235,23 +228,22 @@ KeyCharacterMap::try_file(const char* filename)
         LOGW("Bad keycharmap magic token");
         goto cleanup1;
     }
-
-    if (letoh32(header.endian) != 0x12345678) {
+    if (header.endian != 0x12345678) {
         LOGW("Bad keycharmap endians");
         goto cleanup1;
     }
-    if ((letoh32(header.version) & 0xff) != 2) {
-        LOGW("Only support keycharmap version 2 (got 0x%08x)", letoh32(header.version));
+    if ((header.version & 0xff) != 2) {
+        LOGW("Only support keycharmap version 2 (got 0x%08x)", header.version);
         goto cleanup1;
     }
-    if (filesize < (off_t)(sizeof(Header)+(sizeof(Key)*letoh32(header.keycount)))) {
+    if (filesize < (off_t)(sizeof(Header)+(sizeof(Key)*header.keycount))) {
         LOGW("Bad keycharmap file size\n");
         goto cleanup1;
     }
 
     // read the key data
-    keys = (Key*)malloc(sizeof(Key)*letoh32(header.keycount));
-    err = read(fd, keys, sizeof(Key)*letoh32(header.keycount));
+    keys = (Key*)malloc(sizeof(Key)*header.keycount);
+    err = read(fd, keys, sizeof(Key)*header.keycount);
     if (err == -1) {
         LOGW("Error reading keycharmap file");
         free(keys);
@@ -260,9 +252,9 @@ KeyCharacterMap::try_file(const char* filename)
 
     // return the object
     rv = new KeyCharacterMap;
-    rv->m_keyCount = letoh32(header.keycount);
+    rv->m_keyCount = header.keycount;
     rv->m_keys = keys;
-    rv->m_type = letoh32(header.kbdtype);
+    rv->m_type = header.kbdtype;
 
 cleanup1:
     close(fd);
