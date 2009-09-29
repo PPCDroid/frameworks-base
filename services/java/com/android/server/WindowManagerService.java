@@ -5120,6 +5120,9 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
                 return true;
             }
 
+	    String hwNoPMStr = SystemProperties.get("hw.nopm");
+	    boolean hwNoPM = Boolean.parseBoolean(hwNoPMStr);
+
             switch (event.type) {
                 case RawInputEvent.EV_KEY: {
                     // XXX begin hack
@@ -5171,6 +5174,8 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
                 }
 
                 case RawInputEvent.EV_REL: {
+		    if (hwNoPM)
+			return true;
                     boolean screenIsOff = !mPowerManager.screenIsOn();
                     boolean screenIsDim = !mPowerManager.screenIsBright();
                     if (screenIsOff) {
@@ -5188,6 +5193,8 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
                 }
 
                 case RawInputEvent.EV_ABS: {
+		    if (hwNoPM)
+			return true;
                     boolean screenIsOff = !mPowerManager.screenIsOn();
                     boolean screenIsDim = !mPowerManager.screenIsBright();
                     if (screenIsOff) {
