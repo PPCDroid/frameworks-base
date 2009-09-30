@@ -219,40 +219,40 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
     // How long we wait until giving up on the last activity to pause.  This
     // is short because it directly impacts the responsiveness of starting the
     // next activity.
-    static final int PAUSE_TIMEOUT = 500;
+    static final int PAUSE_TIMEOUT = 5000;
 
     /**
      * How long we can hold the launch wake lock before giving up.
      */
-    static final int LAUNCH_TIMEOUT = 10*1000;
+    static final int LAUNCH_TIMEOUT = 100*1000;
 
     // How long we wait for a launched process to attach to the activity manager
     // before we decide it's never going to come up for real.
-    static final int PROC_START_TIMEOUT = 10*1000;
+    static final int PROC_START_TIMEOUT = 100*1000;
 
     // How long we wait until giving up on the last activity telling us it
     // is idle.
-    static final int IDLE_TIMEOUT = 10*1000;
+    static final int IDLE_TIMEOUT = 100*1000;
 
     // How long to wait after going idle before forcing apps to GC.
-    static final int GC_TIMEOUT = 5*1000;
+    static final int GC_TIMEOUT = 50*1000;
 
     // The minimum amount of time between successive GC requests for a process.
     static final int GC_MIN_INTERVAL = 60*1000;
 
     // How long we wait until giving up on an activity telling us it has
     // finished destroying itself.
-    static final int DESTROY_TIMEOUT = 10*1000;
+    static final int DESTROY_TIMEOUT = 100*1000;
     
     // How long we allow a receiver to run before giving up on it.
-    static final int BROADCAST_TIMEOUT = 10*1000;
+    static final int BROADCAST_TIMEOUT = 100*1000;
 
     // How long we wait for a service to finish executing.
-    static final int SERVICE_TIMEOUT = 20*1000;
+    static final int SERVICE_TIMEOUT = 200*1000;
 
     // How long a service needs to be running until restarting its process
     // is no longer considered to be a relaunch of the service.
-    static final int SERVICE_RESTART_DURATION = 5*1000;
+    static final int SERVICE_RESTART_DURATION = 50*1000;
 
     // How long a service needs to be running until it will start back at
     // SERVICE_RESTART_DURATION after being killed.
@@ -270,17 +270,17 @@ public final class ActivityManagerService extends ActivityManagerNative implemen
     // Maximum amount of time for there to be no activity on a service before
     // we consider it non-essential and allow its process to go on the
     // LRU background list.
-    static final int MAX_SERVICE_INACTIVITY = 30*60*1000;
+    static final int MAX_SERVICE_INACTIVITY = 100*60*1000;
     
     // How long we wait until we timeout on key dispatching.
-    static final int KEY_DISPATCHING_TIMEOUT = 5*1000;
+    static final int KEY_DISPATCHING_TIMEOUT = 50*1000;
 
     // The minimum time we allow between crashes, for us to consider this
     // application to be bad and stop and its services and reject broadcasts.
-    static final int MIN_CRASH_INTERVAL = 60*1000;
+    static final int MIN_CRASH_INTERVAL = 600*1000;
 
     // How long we wait until we timeout on key dispatching during instrumentation.
-    static final int INSTRUMENTATION_KEY_DISPATCHING_TIMEOUT = 60*1000;
+    static final int INSTRUMENTATION_KEY_DISPATCHING_TIMEOUT = 600*1000;
 
     // OOM adjustments for processes in various states:
 
