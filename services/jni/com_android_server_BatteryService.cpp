@@ -36,10 +36,17 @@
 #include <linux/ioctl.h>
 #endif
 
-#include <utils/BatteryServiceStatus.h>
-#include <utils/threads.h>
-
 namespace android {
+
+#define AC_ONLINE_PATH "/sys/class/power_supply/ac/online"
+#define USB_ONLINE_PATH "/sys/class/power_supply/usb/online"
+#define BATTERY_STATUS_PATH "/sys/class/power_supply/battery/status"
+#define BATTERY_HEALTH_PATH "/sys/class/power_supply/battery/health"
+#define BATTERY_PRESENT_PATH "/sys/class/power_supply/battery/present"
+#define BATTERY_CAPACITY_PATH "/sys/class/power_supply/battery/capacity"
+#define BATTERY_VOLTAGE_PATH "/sys/class/power_supply/battery/batt_vol"
+#define BATTERY_TEMPERATURE_PATH "/sys/class/power_supply/battery/batt_temp"
+#define BATTERY_TECHNOLOGY_PATH "/sys/class/power_supply/battery/technology"
 
 struct FieldIds {
     // members
@@ -117,48 +124,77 @@ static jint getBatteryHealth(const char* status)
     }
 }
 
+static int readFromFile(const char* path, char* buf, size_t size)
+{
+    int fd = open(path, O_RDONLY, 0);
+    if (fd == -1) {
+        LOGE("Could not open '%s'", path);
+        return -1;
+    }
+    
+    size_t count = read(fd, buf, size);
+    if (count > 0) {
+        count = (count < size) ? count : size - 1;
+        while (count > 0 && buf[count-1] == '\n') count--;
+        buf[count] = '\0';
+    } else {
+        buf[0] = '\0';
+    } 
 
-static Mutex gLock;
-static BatteryServiceStatus *gBss=NULL;
+    close(fd);
+    return count;
+}
+
+static void setBooleanField(JNIEnv* env, jobject obj, const char* path, jfieldID fieldID)
+{
+    const int SIZE = 16;
+    char buf[SIZE];
+    
+    jboolean value = false;
+    if (readFromFile(path, buf, SIZE) > 0) {
+        if (buf[0] == '1') {
+            value = true;
+        }
+    }
+    env->SetBooleanField(obj, fieldID, value);
+}
+
+static void setIntField(JNIEnv* env, jobject obj, const char* path, jfieldID fieldID)
+{
+    const int SIZE = 128;
+    char buf[SIZE];
+    
+    jint value = 0;
+    if (readFromFile(path, buf, SIZE) > 0) {
+        value = atoi(buf);
+    }
+    env->SetIntField(obj, fieldID, value);
+}
 
 static void android_server_BatteryService_update(JNIEnv* env, jobject obj)
 {
-  gLock.lock();
-  BatteryServiceStatus *Bss = gBss;
-  if (Bss == NULL) {
-      Bss = new BatteryServiceStatus;
-      gBss = Bss;
-  }
-  gLock.unlock();
-
-  env->SetBooleanField(obj,gFieldIds.mAcOnline,
-                    gBss->is_ac_online()==1 ?true:false);
-  env->SetBooleanField(obj,gFieldIds.mUsbOnline,
-                    gBss->is_usb_online()==1 ?true:false);
-  env->SetBooleanField(obj,gFieldIds.mBatteryPresent,
-                    gBss->is_usb_online()==1 ?true:false);
-
-
-  env->SetIntField(obj,gFieldIds.mBatteryLevel,gBss->get_bat_level());
-  env->SetIntField(obj,gFieldIds.mBatteryVoltage,gBss->get_bat_voltage());
-  env->SetIntField(obj,gFieldIds.mBatteryTemperature,
-                   gBss->get_bat_temperature());
+    setBooleanField(env, obj, AC_ONLINE_PATH, gFieldIds.mAcOnline);
+    setBooleanField(env, obj, USB_ONLINE_PATH, gFieldIds.mUsbOnline);
+    setBooleanField(env, obj, BATTERY_PRESENT_PATH, gFieldIds.mBatteryPresent);
     
-  const int SIZE = 128;
-  char buf[SIZE];
-  if (gBss->get_bat_status(buf, SIZE) > 0)
-      env->SetIntField(obj, gFieldIds.mBatteryStatus, getBatteryStatus(buf));
-  else
-      env->SetIntField(obj, gFieldIds.mBatteryStatus, 'U');
+    setIntField(env, obj, BATTERY_CAPACITY_PATH, gFieldIds.mBatteryLevel);
+    setIntField(env, obj, BATTERY_VOLTAGE_PATH, gFieldIds.mBatteryVoltage);
+    setIntField(env, obj, BATTERY_TEMPERATURE_PATH, gFieldIds.mBatteryTemperature);
+    
+    const int SIZE = 128;
+    char buf[SIZE];
+    
+    if (readFromFile(BATTERY_STATUS_PATH, buf, SIZE) > 0)
+        env->SetIntField(obj, gFieldIds.mBatteryStatus, getBatteryStatus(buf));
+    else
+        env->SetIntField(obj, gFieldIds.mBatteryStatus,
+                         gConstants.statusUnknown);
+    
+    if (readFromFile(BATTERY_HEALTH_PATH, buf, SIZE) > 0)
+        env->SetIntField(obj, gFieldIds.mBatteryHealth, getBatteryHealth(buf));
 
-  if (gBss->get_bat_health(buf,SIZE)>0)
-      env->SetIntField(obj, gFieldIds.mBatteryHealth, getBatteryHealth(buf));
-  else
-      env->SetIntField(obj, gFieldIds.mBatteryHealth, 'U');
-
-  if (gBss->get_bat_tech(buf,SIZE)>0)
-      env->SetObjectField(obj, gFieldIds.mBatteryTechnology, env->NewStringUTF(buf));
-
+    if (readFromFile(BATTERY_TECHNOLOGY_PATH, buf, SIZE) > 0)
+        env->SetObjectField(obj, gFieldIds.mBatteryTechnology, env->NewStringUTF(buf));
 }
 
 static JNINativeMethod sMethods[] = {
