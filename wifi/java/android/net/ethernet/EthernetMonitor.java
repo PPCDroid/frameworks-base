@@ -48,16 +48,16 @@ public class EthernetMonitor {
       * The icons to show a connected ethernet connection states.
       */
     private static final int ICON_ETHERNET_DHCP_CONNECTED =
-            com.android.internal.R.drawable.rate_star_big_on;
+            com.android.internal.R.drawable.connect_established;
 
     private static final int ICON_ETHERNET_UP_CONNECTED =
-            com.android.internal.R.drawable.rate_star_big_half;
+            com.android.internal.R.drawable.connect_creating;
 
     /**
       * The icon to show a disconnected ethernet connection.
       */
     private static final int ICON_ETHERNET_DISCONNECTED =
-            com.android.internal.R.drawable.rate_star_big_off;
+            com.android.internal.R.drawable.connect_no;
 
 
     public EthernetMonitor(Context context) {
