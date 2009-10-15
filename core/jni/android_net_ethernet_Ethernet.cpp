@@ -23,6 +23,7 @@
 #include <utils/misc.h>
 #include <android_runtime/AndroidRuntime.h>
 #include <utils/Log.h>
+#include <linux/in.h>
 
 extern "C" {
 
@@ -42,21 +43,7 @@ extern int ifc_get_info(const char *name, unsigned *addr, unsigned *mask, unsign
 
 namespace android {
 
-static const char *ipaddr(unsigned addr)
-{
-    static char buf[32];
-
-    addr = ntohl(addr);
-
-    sprintf(buf,"%d.%d.%d.%d",
-            (addr >> 24),
-            ((addr >> 16) & 255),
-            ((addr >> 8) & 255),
-            addr & 255);
-    return buf;
-}
-
-static jboolean android_net_ethernet_getEthernetStatus(JNIEnv* env, jobject clazz)
+static jboolean android_net_ethernet_isLinkUp(JNIEnv* env, jobject clazz)
 {
     char key[PROPERTY_KEY_MAX];
     char buf[PROPERTY_VALUE_MAX];
@@ -72,13 +59,13 @@ static jboolean android_net_ethernet_getEthernetStatus(JNIEnv* env, jobject claz
 
 	if (!strcmp(buf, "dhcp"))
 		return true;
-	else if (!strcmp(buf, "up"))
+	if (!strcmp(buf, "up"))
 		return true;
 
 	return false;
 }
 
-static jstring android_net_ethernet_getEthernetAddress(JNIEnv* env, jobject clazz)
+static jlong android_net_ethernet_getIPAddress(JNIEnv* env, jobject clazz)
 {
 	char buf[PROPERTY_VALUE_MAX];
 	int len;
@@ -87,27 +74,24 @@ static jstring android_net_ethernet_getEthernetAddress(JNIEnv* env, jobject claz
 	len = property_get("net.device", buf, "");
 
 	if (!len)
-		return env->NewStringUTF(NULL);
+		return INADDR_NONE;
 
-    if(ifc_init()) {
-		return env->NewStringUTF(NULL);
-	}
+        if(ifc_init()) 
+		return INADDR_NONE;
 
-    if(ifc_get_info(buf, &addr, &mask, &flags)) {
-		return env->NewStringUTF(NULL);
-    }
+       if(ifc_get_info(buf, &addr, &mask, &flags)) 
+		return INADDR_NONE;
+       ifc_close();
 
-    ifc_close();
-
-	return env->NewStringUTF(ipaddr(addr));
+	return addr;
 }
 
 /*
  * JNI registration.
  */
 static JNINativeMethod gEthernetMethods[] = {
-    { "getEthernetStatus", "()Z", (void*) android_net_ethernet_getEthernetStatus },
-    { "getEthernetAddress", "()Ljava/lang/String;", (void*) android_net_ethernet_getEthernetAddress },
+    { "isLinkUp", "()Z", (void*) android_net_ethernet_isLinkUp },
+    { "getIPAddress", "()J", (void*) android_net_ethernet_getIPAddress },
 };
 
 int register_android_net_ethernet_EthernetManager(JNIEnv* env)

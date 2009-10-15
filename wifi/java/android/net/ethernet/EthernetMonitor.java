@@ -60,6 +60,7 @@ public class EthernetMonitor {
             com.android.internal.R.drawable.connect_no;
 
 
+
     public EthernetMonitor(Context context) {
         mContext = context;
     }
@@ -76,38 +77,40 @@ public class EthernetMonitor {
         }
 
         public void run() {
-            /**
-             * Keep last hash value of message to be sure
-             * we don't double report a message.
-             */
-            int message_hash = 0;
+           int icon = -1;
+	   long ipaddr = -1;
+           String message;
 
-            for (;;) {
-                boolean status = EthernetNative.getEthernetStatus();
-                int icon;
-                CharSequence message;
+            while(true) {
 
-                /**
+                /*
                  * Poll every 500 milliseconds
                  */
                 nap(500);
 
-                if (status) {
-                    String address = EthernetNative.getEthernetAddress();
+                if (EthernetNative.isLinkUp()) {
+                    long address = EthernetNative.getIPAddress();
 
                     if (DBG)
                         Log.i(TAG, "Ethernet device link up");
 
-                    if (address.equals("0.0.0.0")) {
+                    if (address == 0) {
+                    	if (icon == ICON_ETHERNET_UP_CONNECTED)
+				continue;
                         icon = ICON_ETHERNET_UP_CONNECTED;
                         message = "Ethernet connection is up without an IP address";
                     } else {
+                    	if (icon == ICON_ETHERNET_DHCP_CONNECTED && address == ipaddr )
+				continue;
                         icon = ICON_ETHERNET_DHCP_CONNECTED;
-                        message = "Ethernet connection is up at '" + address + "'";
+			ipaddr = address;
+                        message = "Ethernet connection is up at '" + EthernetNative.formatIPAddress(address) + "'";
                     }
                 } else {
                     if (DBG)
                         Log.i(TAG, "Ethernet device link down");
+                    if (icon == ICON_ETHERNET_DISCONNECTED)
+			continue;
 
                     icon = ICON_ETHERNET_DISCONNECTED;
                     message = "Ethernet connection is down";
@@ -118,12 +121,8 @@ public class EthernetMonitor {
                         System.currentTimeMillis(),
                         message, "", null);
 
-                if (message_hash == n.hashCode())
-                    continue;
-
                 mNotificationManager.notify(1, n);
 
-                message_hash = n.hashCode();
             }
         }
 
