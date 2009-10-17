@@ -83,7 +83,7 @@ static jlong android_net_ethernet_getIPAddress(JNIEnv* env, jobject clazz)
 		return INADDR_NONE;
        ifc_close();
 
-	return addr;
+	return htonl(addr);
 }
 
 /*
