@@ -231,6 +231,7 @@ public class GoogleHttpClient implements HttpClient {
             // Note that this is only describing execute(), not body download.
             // We assume the database writes are much faster than network I/O,
             // and not worth running in a background thread or anything.
+            /*
             try {
                 long elapsed = SystemClock.elapsedRealtime() - start;
                 ContentValues values = new ContentValues();
@@ -253,6 +254,7 @@ public class GoogleHttpClient implements HttpClient {
             } catch (Exception e) {
                 Log.e(TAG, "Error recording stats", e);
             }
+	    */
         }
     }
 

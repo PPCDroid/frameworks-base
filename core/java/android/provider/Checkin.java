@@ -219,6 +219,8 @@ public final class Checkin {
      */
     static public Uri logEvent(ContentResolver resolver,
             Events.Tag tag, String value) {
+        return null;
+	/*
         try {
             // Don't specify the date column; the content provider will add that.
             ContentValues values = new ContentValues();
@@ -232,6 +234,7 @@ public final class Checkin {
             Log.e(TAG, "Can't log event " + tag, e);  // Database errors are not fatal.
             return null;
         }
+        */
     }
 
     /**
@@ -245,6 +248,8 @@ public final class Checkin {
      */
     static public Uri updateStats(ContentResolver resolver,
             Stats.Tag tag, int count, double sum) {
+        return null;
+	/*
         try {
             ContentValues values = new ContentValues();
             values.put(Stats.TAG, tag.toString());
@@ -258,6 +263,7 @@ public final class Checkin {
             Log.e(TAG, "Can't update stat " + tag, e);  // Database errors are not fatal.
             return null;
         }
+	*/
     }
 
     /** Minimum time to wait after a crash failure before trying again. */
@@ -274,6 +280,8 @@ public final class Checkin {
      * @return URI of the crash report that was added
      */
     static public Uri reportCrash(ContentResolver resolver, byte[] crash) {
+        return null;
+	/*
         try {
             // If we are in a situation where crash reports fail (such as a full disk),
             // it's important that we don't get into a loop trying to report failures.
@@ -300,6 +308,7 @@ public final class Checkin {
             sLastCrashFailureRealtime = SystemClock.elapsedRealtime();
             return null;
         }
+	*/
     }
 
     /**
@@ -310,6 +319,8 @@ public final class Checkin {
      * @return URI of the crash report that was added
      */
     static public Uri reportCrash(ContentResolver resolver, CrashData crash) {
+        return null;
+	/*
         try {
             ByteArrayOutputStream data = new ByteArrayOutputStream();
             crash.write(new DataOutputStream(data));
@@ -319,5 +330,6 @@ public final class Checkin {
             Log.e(TAG, "Error writing crash: " + t);
             return null;
         }
+	*/
     }
 }
