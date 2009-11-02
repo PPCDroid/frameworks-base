@@ -8026,7 +8026,7 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
             if (DEBUG_INPUT)
                 Log.i(TAG, "Create Mouse Surface");
 
-            mMw = 20;
+            mMw = 12;
             mMh = 20;
             mMx = (mDisplay.getWidth() - mMw) / 2;
             mMy = (mDisplay.getHeight() - mMh) / 2;
@@ -8039,7 +8039,7 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
 
                 mMouseSurface =
                     new Surface(mFxSession,
-                                0,-1,mMw,mMy,
+                                0, -1, mMw, mMy,
                                 PixelFormat.TRANSPARENT,
                                 Surface.FX_SURFACE_NORMAL);
                 mCanvas = mMouseSurface.lockCanvas(null);
