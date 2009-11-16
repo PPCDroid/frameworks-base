@@ -98,8 +98,8 @@ AudioHardwareInterface* AudioHardwareInterface::create()
 #else
     // if running in emulation - use the emulator driver
     property_get("ro.product.board", value, "");
-    if (!strncmp(value, "goldfish", 8)) {
-        LOGD("Running in ARM emulation - using generic audio driver");
+    if (!strncmp(value, "goldfish", 8) || !strncmp(value, "silverbox", 9)) {
+        LOGD("Running in emulation - using generic audio driver");
         hw = new AudioHardwareGeneric();
     }
     else {
