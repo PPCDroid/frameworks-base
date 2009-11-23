@@ -1,5 +1,6 @@
 #include "AST.h"
 #include "Type.h"
+#include <stdio.h>
 
 void
 WriteModifiers(FILE* to, int mod, int mask)

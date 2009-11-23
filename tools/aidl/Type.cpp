@@ -1,4 +1,5 @@
 #include "Type.h"
+#include <stdio.h>
 
 Namespace NAMES;
 
