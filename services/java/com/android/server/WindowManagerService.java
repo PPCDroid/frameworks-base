@@ -8043,18 +8043,22 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
                                 PixelFormat.TRANSPARENT,
                                 Surface.FX_SURFACE_NORMAL);
                 mCanvas = mMouseSurface.lockCanvas(null);
-                Paint  tPaint = new Paint();
+                Paint tPaint = new Paint();
                 tPaint.setStyle(Paint.Style.STROKE);
                 tPaint.setStrokeWidth(2);
-                mPath.moveTo(0.0f,0.0f);
-                mPath.lineTo(16.0f, 0.0f);
-                mPath.lineTo(0.0f, 16.0f);
+                tPaint.setColor(0xffffffff);
+                mPath.moveTo(0.0f, 0.0f);
+                mPath.lineTo(12.0f, 12.0f);
+                mPath.lineTo(7.0f, 12.0f);
+                mPath.lineTo(11.0f, 20.0f);
+                mPath.lineTo(8.0f, 21.0f);
+                mPath.lineTo(4.0f, 13.0f);
+                mPath.lineTo(0.0f, 17.0f);
                 mPath.close();
 
                 mCanvas.clipPath(mPath);
-                mCanvas.drawColor(0xffffffff);
+                mCanvas.drawColor(0xff000000);
                 mCanvas.drawPath(mPath, tPaint);
-
 
                 mMouseSurface.unlockCanvasAndPost(mCanvas);
                 mMouseSurface.openTransaction();
