@@ -237,11 +237,10 @@ public abstract class ApplicationThreadNative extends Binder
             boolean restrictedBackupMode = (data.readInt() != 0);
             Configuration config = Configuration.CREATOR.createFromParcel(data);
             HashMap<String, IBinder> services = data.readHashMap(null);
-            int gdbPort = data.readInt();
             bindApplication(packageName, info,
                             providers, testName, profileName,
                             testArgs, testWatcher, testMode, restrictedBackupMode,
-                            config, services, gdbPort);
+                            config, services);
             return true;
         }
         
@@ -594,19 +593,10 @@ class ApplicationThreadProxy implements IApplicationThread {
     }
 
     public final void bindApplication(String packageName, ApplicationInfo info,
-        List<ProviderInfo> providers, ComponentName testName,
-        String profileName, Bundle testArgs, IInstrumentationWatcher testWatcher, int debugMode,
-        boolean restrictedBackupMode, Configuration config,
-        Map<String, IBinder> services, int gdbPort) throws RemoteException {
-        bindApplication( packageName, info, providers, testName, profileName, testArgs,
-                         testWatcher, debugMode, config, services, -1);
-    }
-
-    public final void bindApplication(String packageName, ApplicationInfo info,
             List<ProviderInfo> providers, ComponentName testName,
             String profileName, Bundle testArgs, IInstrumentationWatcher testWatcher, int debugMode,
             boolean restrictedBackupMode, Configuration config,
-            Map<String, IBinder> services, int gdbPort) throws RemoteException {
+            Map<String, IBinder> services) throws RemoteException {
         Parcel data = Parcel.obtain();
         data.writeInterfaceToken(IApplicationThread.descriptor);
         data.writeString(packageName);
@@ -625,7 +615,6 @@ class ApplicationThreadProxy implements IApplicationThread {
         data.writeInt(restrictedBackupMode ? 1 : 0);
         config.writeToParcel(data, 0);
         data.writeMap(services);
-	data.writeInt(gdbPort);
         mRemote.transact(BIND_APPLICATION_TRANSACTION, data, null,
                 IBinder.FLAG_ONEWAY);
         data.recycle();

@@ -44,7 +44,6 @@ public class Am {
     private String mCurArgData;
 
     private boolean mDebugOption = false;
-    private int mGDBPort = -1;
 
     /**
      * Command-line entry point.
@@ -93,7 +92,6 @@ public class Am {
         boolean hasIntentInfo = false;
 
         mDebugOption = false;
-	mGDBPort = -1;
         Uri data = null;
         String type = null;
 
@@ -142,11 +140,6 @@ public class Am {
                     intent.setFlags(Integer.decode(str).intValue());
                 } else if (opt.equals("-D")) {
                     mDebugOption = true;
-		} else if (opt.equals("-g")) {
-		    mGDBPort = 10000;
-		} else if (opt.equals("-G")) {
-                    String str = nextOptionData();
-                    mGDBPort = Integer.decode(str).intValue();
                 } else {
                     System.err.println("Error: Unknown option: " + opt);
                     showUsage();
@@ -207,7 +200,7 @@ public class Am {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 // XXX should do something to determine the MIME type.
                 int res = mAm.startActivity(null, intent, intent.getType(),
-                        null, 0, null, null, 0, false, mDebugOption, mGDBPort);
+                        null, 0, null, null, 0, false, mDebugOption);
                 switch (res) {
                     case IActivityManager.START_SUCCESS:
                         break;
@@ -548,7 +541,7 @@ public class Am {
 
     private void showUsage() {
         System.err.println("usage: am [start|broadcast|instrument|profile]");
-        System.err.println("       am start [-D] [-g|-G port] INTENT");
+        System.err.println("       am start [-D] INTENT");
         System.err.println("       am broadcast INTENT");
         System.err.println("       am instrument [-r] [-e <ARG_NAME> <ARG_VALUE>] [-p <PROF_FILE>]");
         System.err.println("                [-w] <COMPONENT> ");

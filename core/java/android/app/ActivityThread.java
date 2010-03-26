@@ -1235,7 +1235,6 @@ public final class ActivityThread {
         boolean restrictedBackupMode;
         Configuration config;
         boolean handlingProfiling;
-	int gdbPort;
         public String toString() {
             return "AppBindData{appInfo=" + appInfo + "}";
         }
@@ -1437,16 +1436,6 @@ public final class ActivityThread {
                 Bundle instrumentationArgs, IInstrumentationWatcher instrumentationWatcher,
                 int debugMode, boolean isRestrictedBackupMode, Configuration config,
                 Map<String, IBinder> services) {
-		bindApplication(processName, appInfo, providers,
-				instrumentationName, profileFile, instrumentationArgs, 
-				instrumentationWatcher,debugMode, config, services, -1);
-	}
-        public final void bindApplication(String processName,
-                ApplicationInfo appInfo, List<ProviderInfo> providers,
-                ComponentName instrumentationName, String profileFile,
-                Bundle instrumentationArgs, IInstrumentationWatcher instrumentationWatcher,
-                int debugMode, Configuration config,
-                Map<String, IBinder> services, int gdbPort) {
             Process.setArgV0(processName);
 
             if (services != null) {
@@ -1465,7 +1454,6 @@ public final class ActivityThread {
             data.debugMode = debugMode;
             data.restrictedBackupMode = isRestrictedBackupMode;
             data.config = config;
-	    data.gdbPort = gdbPort;
             queueOrSendMessage(H.BIND_APPLICATION, data);
         }
 
@@ -3781,24 +3769,6 @@ public final class ActivityThread {
             Bitmap.setDefaultDensity(DisplayMetrics.DENSITY_DEFAULT);
         }
         
-	if ( data.gdbPort > 0 ) {
-		Log.w(TAG,"Application "+data.info.getPackageName()
-			+ " is waiting for gdb to attach to it on port "+data.gdbPort);
-                IActivityManager mgr = ActivityManagerNative.getDefault();
-                try {
-                    mgr.showWaitingForDebugger(mAppThread, true, true);
-                } catch (RemoteException ex) {
-                }
-		try {
-		dalvik.system.VMDebug.startGDBServer(data.gdbPort);
-		} catch (java.io.IOException e) {
-		}
-                try {
-                    mgr.showWaitingForDebugger(mAppThread, true, false);
-                } catch (RemoteException ex) {
-                }
-	}
-
         if (data.debugMode != IApplicationThread.DEBUG_OFF) {
             // XXX should have option to change the port.
             Debug.changeDebugPort(8100);
@@ -3808,14 +3778,14 @@ public final class ActivityThread {
 
                 IActivityManager mgr = ActivityManagerNative.getDefault();
                 try {
-                    mgr.showWaitingForDebugger(mAppThread, false, true);
+                    mgr.showWaitingForDebugger(mAppThread, true);
                 } catch (RemoteException ex) {
                 }
 
                 Debug.waitForDebugger();
 
                 try {
-                    mgr.showWaitingForDebugger(mAppThread, false, false);
+                    mgr.showWaitingForDebugger(mAppThread, false);
                 } catch (RemoteException ex) {
                 }
 

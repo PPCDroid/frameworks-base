@@ -139,10 +139,9 @@ public abstract class ActivityManagerNative extends Binder implements IActivityM
             int requestCode = data.readInt();
             boolean onlyIfNeeded = data.readInt() != 0;
             boolean debug = data.readInt() != 0;
-	    int gdbPort = data.readInt();
             int result = startActivity(app, intent, resolvedType,
                     grantedUriPermissions, grantedMode, resultTo, resultWho,
-                    requestCode, onlyIfNeeded, debug, gdbPort);
+                    requestCode, onlyIfNeeded, debug);
             reply.writeNoException();
             reply.writeInt(result);
             return true;
@@ -814,9 +813,8 @@ public abstract class ActivityManagerNative extends Binder implements IActivityM
             data.enforceInterface(IActivityManager.descriptor);
             IBinder b = data.readStrongBinder();
             IApplicationThread app = ApplicationThreadNative.asInterface(b);
-            boolean nativeDbg = data.readInt() != 0;
             boolean waiting = data.readInt() != 0;
-            showWaitingForDebugger(app, nativeDbg, waiting);
+            showWaitingForDebugger(app, waiting);
             reply.writeNoException();
             return true;
         }
@@ -1134,17 +1132,6 @@ class ActivityManagerProxy implements IActivityManager
             IBinder resultTo, String resultWho,
             int requestCode, boolean onlyIfNeeded,
             boolean debug) throws RemoteException {
-	
-        return startActivity( caller, intent,
-			resolvedType, grantedUriPermissions, grantedMode,
-			resultTo, resultWho, requestCode, onlyIfNeeded,
-			debug, -1);
-    }
-    public int startActivity(IApplicationThread caller, Intent intent,
-            String resolvedType, Uri[] grantedUriPermissions, int grantedMode,
-            IBinder resultTo, String resultWho,
-            int requestCode, boolean onlyIfNeeded,
-            boolean debug, int gdbPort) throws RemoteException {
         Parcel data = Parcel.obtain();
         Parcel reply = Parcel.obtain();
         data.writeInterfaceToken(IActivityManager.descriptor);
@@ -1158,7 +1145,6 @@ class ActivityManagerProxy implements IActivityManager
         data.writeInt(requestCode);
         data.writeInt(onlyIfNeeded ? 1 : 0);
         data.writeInt(debug ? 1 : 0);
-        data.writeInt(gdbPort);
         mRemote.transact(START_ACTIVITY_TRANSACTION, data, reply, 0);
         reply.readException();
         int result = reply.readInt();
@@ -2076,13 +2062,12 @@ class ActivityManagerProxy implements IActivityManager
         data.recycle();
         reply.recycle();
     }
-    public void showWaitingForDebugger(IApplicationThread who, boolean nativeDbg, boolean waiting)
+    public void showWaitingForDebugger(IApplicationThread who, boolean waiting)
             throws RemoteException {
         Parcel data = Parcel.obtain();
         Parcel reply = Parcel.obtain();
         data.writeInterfaceToken(IActivityManager.descriptor);
         data.writeStrongBinder(who.asBinder());
-        data.writeInt(nativeDbg ? 1 : 0);
         data.writeInt(waiting ? 1 : 0);
         mRemote.transact(SHOW_WAITING_FOR_DEBUGGER_TRANSACTION, data, reply, 0);
         reply.readException();
