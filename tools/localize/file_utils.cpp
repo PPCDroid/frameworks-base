@@ -9,7 +9,6 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <stdio.h>
-#include <host/Directories.h>
 #include "log.h"
 
 using namespace android;
