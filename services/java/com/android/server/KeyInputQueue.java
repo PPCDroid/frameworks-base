@@ -311,6 +311,20 @@ public abstract class KeyInputQueue {
                                     di.mAbs.changed = true;
                                     di.mAbs.down=ev.value != 0;
                                 }
+                            } else if (ev.scancode == RawInputEvent.BTN_RIGHT) {
+                                if ((classes&RawInputEvent.CLASS_MOUSE) != 0) {
+                                    boolean down = (ev.value != 0);
+                                    if (down) {
+                                        di.mDownTime = curTime;
+                                    }
+
+                                    addLocked(di, curTime, ev.flags,
+                                        RawInputEvent.CLASS_KEYBOARD,
+                                        newKeyEvent(di, di.mDownTime, curTime, down,
+                                            KeyEvent.KEYCODE_MENU, 0, scancode,
+                                            ((ev.flags & WindowManagerPolicy.FLAG_WOKE_HERE) != 0)
+                                            ? KeyEvent.FLAG_WOKE_HERE : 0));
+                                }
                             }
     
                         } else if (ev.type == RawInputEvent.EV_ABS &&
