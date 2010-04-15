@@ -65,6 +65,7 @@ pid_t gettid() { return syscall(__NR_gettid);}
 #undef __KERNEL__
 #endif
 
+#define VORBIS_IDENT letoh32(0x5367674f)
 
 namespace android {
 
@@ -488,7 +489,7 @@ static player_type getPlayerType(int fd, int64_t offset, int64_t length)
     long ident = *((long*)buf);
 
     // Ogg vorbis?
-    if (ident == 0x5367674f) // 'OggS'
+    if (ident == VORBIS_IDENT) // 'OggS'
         return VORBIS_PLAYER;
 
     // Some kind of MIDI?
