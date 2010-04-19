@@ -5385,29 +5385,39 @@ public class WindowManagerService extends IWindowManager.Stub implements Watchdo
                                 int mcy = (int)mmev.getY();
 
                                 if (mMouseSurface != null && (mMlx != mcx || mMly != mcy)) {
-                                    Surface.openTransaction();
-                                    if (DEBUG_INPUT)
-                                        Log.i(TAG, "Open transaction for the mouse surface");
-                                    WindowState top =
-                                        (WindowState)mWindows.get(mWindows.size() - 1);
+                                    long origId = Binder.clearCallingIdentity();
                                     try {
-                                        if (DEBUG_INPUT)
-                                            Log.i(TAG, "Move surf, x: " +
-                                                  Integer.toString(mcx) + " y:"
-                                                  + Integer.toString(mcy));
+                                        synchronized (mWindowMap) {
+                                            if (DEBUG_INPUT)
+                                                Log.i(TAG, "Open transaction for the mouse surface");
+                                            WindowState top =
+                                                (WindowState)mWindows.get(mWindows.size() - 1);
+                                            if (top != null && top.mSurface != null) {
+                                                Surface.openTransaction();
+                                                try {
+                                                    if (DEBUG_INPUT)
+                                                        Log.i(TAG, "Move surf, x: " +
+                                                              Integer.toString(mcx) + " y:"
+                                                              + Integer.toString(mcy));
 
-                                        mMouseSurface.setPosition(mcx,mcy);
-                                        mMouseSurface.setLayer(top.mAnimLayer + 1);
-                                        if (mShowMouse != 1) {
-                                            mMouseSurface.show();
-                                            mShowMouse = 1;
+                                                    mMouseSurface.setPosition(mcx,mcy);
+                                                    mMouseSurface.setLayer(top.mAnimLayer + 1);
+                                                    if (mShowMouse != 1) {
+                                                        mMouseSurface.show();
+                                                        mShowMouse = 1;
+                                                    }
+                                                    mMlx = mcx;
+                                                    mMly = mcy;
+                                                } catch ( RuntimeException e) {
+                                                    Log.w(TAG, "Failure showing mouse surface",e);
+                                                } finally {
+                                                    Surface.closeTransaction();
+                                                }
+                                            }
                                         }
-                                        mMlx = mcx;
-                                        mMly = mcy;
-                                    } catch ( RuntimeException e) {
-                                        Log.e(TAG, "Failure showing mouse surface",e);
+                                    } finally {
+                                        Binder.restoreCallingIdentity(origId);
                                     }
-                                    Surface.closeTransaction();
                                 }
                                 dispatchPointer(ev, (MotionEvent)ev.event, 0, 0);
                                 break;

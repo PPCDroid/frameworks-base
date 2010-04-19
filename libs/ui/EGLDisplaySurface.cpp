@@ -408,6 +408,13 @@ status_t EGLDisplaySurface::mapFrameBuffer()
                 info.yres_virtual, info.yres*2);
     }
 
+#ifdef BOARD_HAS_BROKEN_PAGEFLIP
+    if (flags & PAGE_FLIP) {
+        flags &= ~PAGE_FLIP;
+        LOGW("Framebuffer driver has broken page flip; page flipping disabled.");
+    }
+#endif
+
     if (ioctl(fd, FBIOGET_VSCREENINFO, &info) == -1)
         return -errno;
 
