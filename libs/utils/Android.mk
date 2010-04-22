@@ -91,6 +91,10 @@ LOCAL_CFLAGS += -DMB_CUR_MAX=1
 endif
 endif
 
+ifeq ($(strip $(BOARD_USES_MOUSE)),true)
+LOCAL_CFLAGS += -DBOARD_USES_MOUSE
+endif
+
 include $(BUILD_HOST_STATIC_LIBRARY)
 
 
@@ -158,6 +162,10 @@ LOCAL_MODULE:= libutils
 
 #LOCAL_CFLAGS+=
 #LOCAL_LDFLAGS:=
+
+ifeq ($(strip $(BOARD_USES_MOUSE)),true)
+LOCAL_CFLAGS += -DBOARD_USES_MOUSE
+endif
 
 include $(BUILD_SHARED_LIBRARY)
 

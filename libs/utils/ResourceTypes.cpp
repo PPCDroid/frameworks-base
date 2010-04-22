@@ -3562,7 +3562,14 @@ ssize_t ResTable::getEntry(
         // Check to make sure this one is valid for the current parameters.
         if (config && !thisConfig.match(*config)) {
             TABLE_GETENTRY(LOGI("Does not match config!\n"));
-            continue;
+#ifdef BOARD_USES_MOUSE
+            // Allow no touchscreen device to use touchscreen configuration
+            thisConfig.touchscreen = 0;
+            if (!thisConfig.match(*config))
+                continue;
+#else
+	    continue;
+#endif
         }
         
         // Check if there is the desired entry in this type.
