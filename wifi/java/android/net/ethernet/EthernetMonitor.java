@@ -45,6 +45,15 @@ public class EthernetMonitor {
     private static Context mContext;
 
     /**
+     * Connection state
+     */
+    private boolean mIsConnected = false;
+
+    public boolean IsConnected() {
+        return mIsConnected;
+    }
+
+    /**
       * The icons to show a connected ethernet connection states.
       */
     private static final int ICON_ETHERNET_DHCP_CONNECTED =
@@ -99,16 +108,19 @@ public class EthernetMonitor {
 				continue;
                         icon = ICON_ETHERNET_UP_CONNECTED;
                         message = "Ethernet connection is up without an IP address";
+			mIsConnected = false;
                     } else {
                     	if (icon == ICON_ETHERNET_DHCP_CONNECTED && address == ipaddr )
 				continue;
                         icon = ICON_ETHERNET_DHCP_CONNECTED;
 			ipaddr = address;
                         message = "Ethernet connection is up at '" + EthernetNative.formatIPAddress(address) + "'";
+			mIsConnected = true;
                     }
                 } else {
                     if (DBG)
                         Log.i(TAG, "Ethernet device link down");
+                    mIsConnected = false;
                     if (icon == ICON_ETHERNET_DISCONNECTED)
 			continue;
 

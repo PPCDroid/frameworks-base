@@ -267,6 +267,10 @@ public class ConnectivityService extends IConnectivityManager.Stub {
         return result;
     }
 
+    public boolean EthEnabled() {
+        return mEthernetMonitor.IsConnected();
+    }
+
     public boolean setRadios(boolean turnOn) {
         boolean result = true;
         enforceChangePermission();

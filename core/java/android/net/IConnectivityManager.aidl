@@ -35,6 +35,8 @@ interface IConnectivityManager
 
     NetworkInfo[] getAllNetworkInfo();
 
+    boolean EthEnabled();
+
     boolean setRadios(boolean onOff);
 
     boolean setRadio(int networkType, boolean turnOn);

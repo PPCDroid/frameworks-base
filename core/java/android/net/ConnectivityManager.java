@@ -148,6 +148,14 @@ public class ConnectivityManager
         }
     }
 
+    public boolean EthEnabled() {
+        try {
+	    return mService.EthEnabled();
+        } catch (RemoteException e) {
+            return false;
+	}
+    }
+
     public NetworkInfo getNetworkInfo(int networkType) {
         try {
             return mService.getNetworkInfo(networkType);
