@@ -438,11 +438,11 @@ void ResStringPool::uninit()
     }
 }
 
-#define DECODE_LENGTH(str, chrsz, len) \
-    len = *(str); \
-    if (*(str)&(1<<(chrsz*8-1))) { \
+#define DECODE_LENGTH(str, chrsz, len, fun) \
+    len = fun(*(str)); \
+    if (len&(1<<(chrsz*8-1))) { \
         (str)++; \
-        len = (((len)&((1<<(chrsz*8-1))-1))<<(chrsz*8)) + *(str); \
+        len = (((len)&((1<<(chrsz*8-1))-1))<<(chrsz*8)) + fun(*(str)); \
     } \
     (str)++;
 
@@ -455,7 +455,7 @@ const uint16_t* ResStringPool::stringAt(size_t idx, size_t* outLen) const
             if (!isUTF8) {
                 const char16_t* strings = (char16_t*)mStrings;
                 const char16_t* str = strings+off;
-                DECODE_LENGTH(str, sizeof(char16_t), *outLen)
+                DECODE_LENGTH(str, sizeof(char16_t), *outLen, )
                 if ((uint32_t)(str+*outLen-strings) < mStringPoolSize) {
                     return str;
                 } else {
@@ -465,9 +465,9 @@ const uint16_t* ResStringPool::stringAt(size_t idx, size_t* outLen) const
             } else {
                 const uint8_t* strings = (uint8_t*)mStrings;
                 const uint8_t* str = strings+off;
-                DECODE_LENGTH(str, sizeof(uint8_t), *outLen)
+                DECODE_LENGTH(str, sizeof(uint8_t), *outLen, )
                 size_t encLen;
-                DECODE_LENGTH(str, sizeof(uint8_t), encLen)
+                DECODE_LENGTH(str, sizeof(uint8_t), encLen, )
                 if ((uint32_t)(str+encLen-strings) < mStringPoolSize) {
                     AutoMutex lock(mDecodeLock);
                     if (mCache[idx] != NULL) {
@@ -506,9 +506,9 @@ const char* ResStringPool::string8At(size_t idx, size_t* outLen) const
             if (isUTF8) {
                 const uint8_t* strings = (uint8_t*)mStrings;
                 const uint8_t* str = strings+off;
-                DECODE_LENGTH(str, sizeof(uint8_t), *outLen)
+                DECODE_LENGTH(str, sizeof(uint8_t), *outLen, )
                 size_t encLen;
-                DECODE_LENGTH(str, sizeof(uint8_t), encLen)
+                DECODE_LENGTH(str, sizeof(uint8_t), encLen, )
                 if ((uint32_t)(str+encLen-strings) < mStringPoolSize) {
                     return (const char*)str;
                 } else {

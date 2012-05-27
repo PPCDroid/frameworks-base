@@ -169,14 +169,14 @@ sp<AaptFile> StringPool::createStringBlock()
     return err == NO_ERROR ? pool : NULL;
 }
 
-#define ENCODE_LENGTH(str, chrsz, strSize) \
+#define ENCODE_LENGTH(str, chrsz, strSize, func) \
 { \
     size_t maxMask = 1 << ((chrsz*8)-1); \
     size_t maxSize = maxMask-1; \
     if (strSize > maxSize) { \
-        *str++ = maxMask | ((strSize>>(chrsz*8))&maxSize); \
+        *str++ = func(maxMask | ((strSize>>(chrsz*8))&maxSize)); \
     } \
-    *str++ = strSize; \
+    *str++ = func(strSize); \
 }
 
 status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
@@ -260,15 +260,15 @@ status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
         if (mUTF8) {
             uint8_t* strings = (uint8_t*)dat;
 
-            ENCODE_LENGTH(strings, sizeof(uint8_t), strSize)
+            ENCODE_LENGTH(strings, sizeof(uint8_t), strSize, )
 
-            ENCODE_LENGTH(strings, sizeof(uint8_t), encSize)
+            ENCODE_LENGTH(strings, sizeof(uint8_t), encSize, )
 
             strncpy((char*)strings, encStr, encSize+1);
         } else {
             uint16_t* strings = (uint16_t*)dat;
 
-            ENCODE_LENGTH(strings, sizeof(uint16_t), strSize)
+            ENCODE_LENGTH(strings, sizeof(uint16_t), strSize, htods)
 
             strcpy16_htod(strings, ent.value);
         }
