@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <utils/Errors.h>
+#include <endian.h>
 
 #include <pixelflinger/pixelflinger.h>
 
