@@ -57,7 +57,7 @@ LOCAL_SRC_FILES:= $(commonSources)
 
 LOCAL_MODULE:= libutils
 
-LOCAL_CFLAGS += -DLIBUTILS_NATIVE=1 $(TOOL_CFLAGS)
+LOCAL_CFLAGS += -DLIBUTILS_NATIVE=1 $(TOOL_CFLAGS) -fpermissive
 LOCAL_C_INCLUDES += external/zlib
 
 ifeq ($(HOST_OS),windows)
@@ -102,6 +102,10 @@ LOCAL_SHARED_LIBRARIES := \
 	libz \
 	liblog \
 	libcutils
+
+ifeq ($(TARGET_OS)-$(TARGET_ARCH),linux-powerpc)
+LOCAL_SHARED_LIBRARIES += libdl
+endif
 
 ifneq ($(TARGET_SIMULATOR),true)
 ifeq ($(TARGET_OS)-$(TARGET_ARCH),linux-x86)
