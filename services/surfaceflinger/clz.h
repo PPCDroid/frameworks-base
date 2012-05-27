@@ -24,7 +24,7 @@ int clz_impl(int32_t x);
 
 int inline clz(int32_t x)
 {
-#if defined(__arm__) && !defined(__thumb__)
+#if (defined(__arm__) && !defined(__thumb__)) || defined(__powerpc__)
     return __builtin_clz(x);
 #else
     return clz_impl(x);
