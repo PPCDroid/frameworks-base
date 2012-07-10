@@ -725,18 +725,19 @@ bool InputDispatcher::dispatchMotionLocked(
         logOutboundMotionDetailsLocked("dispatchMotion - ", entry);
     }
 
+    bool isPointerEvent = entry->source & AINPUT_SOURCE_CLASS_POINTER;
+    bool isMouseEvent = entry->source & (AINPUT_SOURCE_MOUSE & ~AINPUT_SOURCE_CLASS_POINTER);
+    bool isTouchEvent = entry->source & (AINPUT_SOURCE_TOUCHSCREEN & ~AINPUT_SOURCE_CLASS_POINTER);
+    bool isDownEvent = (entry->action & AMOTION_EVENT_ACTION_MASK) == AMOTION_EVENT_ACTION_DOWN;
+
     // Clean up if dropping the event.
-    if (*dropReason != DROP_REASON_NOT_DROPPED) {
+    // And don't drop mouse events even if device is locked.
+    if (*dropReason != DROP_REASON_NOT_DROPPED && !isMouseEvent) {
         resetTargetsLocked();
         setInjectionResultLocked(entry, *dropReason == DROP_REASON_POLICY
                 ? INPUT_EVENT_INJECTION_SUCCEEDED : INPUT_EVENT_INJECTION_FAILED);
         return true;
     }
-
-    bool isPointerEvent = entry->source & AINPUT_SOURCE_CLASS_POINTER;
-    bool isMouseEvent = entry->source & (AINPUT_SOURCE_MOUSE & ~AINPUT_SOURCE_CLASS_POINTER);
-    bool isTouchEvent = entry->source & (AINPUT_SOURCE_TOUCHSCREEN & ~AINPUT_SOURCE_CLASS_POINTER);
-    bool isDownEvent = (entry->action & AMOTION_EVENT_ACTION_MASK) == AMOTION_EVENT_ACTION_DOWN;
 
     // Identify targets.
     if (! mCurrentInputTargetsValid) {

@@ -1384,7 +1384,7 @@ void MouseInputMapper::sync(nsecs_t when)
 
         if (fields & Accumulator::FIELD_BTN_RIGHT)
         {
-            getDispatcher()->notifyKey(when, getDeviceId(), AINPUT_SOURCE_DPAD, 0,
+            getDispatcher()->notifyKey(when, getDeviceId(), AINPUT_SOURCE_MOUSE, POLICY_FLAG_WAKE,
                                    mAccumulator.btnRight ? AKEY_EVENT_ACTION_DOWN : AKEY_EVENT_ACTION_UP,
                                    AKEY_EVENT_FLAG_FROM_SYSTEM, 0x4 /*Keycode for back key*/,
                                    0x18 /*Scancode*/, mContext->getGlobalMetaState(), when);
@@ -1392,7 +1392,7 @@ void MouseInputMapper::sync(nsecs_t when)
 
         if (fields & Accumulator::FIELD_BTN_MIDDLE)
         {
-            getDispatcher()->notifyKey(when, getDeviceId(),AINPUT_SOURCE_DPAD, 0,
+            getDispatcher()->notifyKey(when, getDeviceId(),AINPUT_SOURCE_MOUSE, POLICY_FLAG_WAKE,
                                    mAccumulator.btnMiddle ? AKEY_EVENT_ACTION_DOWN : AKEY_EVENT_ACTION_UP,
                                    AKEY_EVENT_FLAG_FROM_SYSTEM, 0x52 /*Keycode for menu key*/,
                                    0x19 /*Scancode*/, mContext->getGlobalMetaState(), when);
@@ -1482,7 +1482,7 @@ void MouseInputMapper::sync(nsecs_t when)
     int32_t metaState = mContext->getGlobalMetaState();
     int32_t pointerId = 0;
     getDispatcher()->notifyMotion(when, getDeviceId(), AINPUT_SOURCE_MOUSE, 0,
-            motionEventAction, 0, metaState, AMOTION_EVENT_EDGE_FLAG_NONE,
+            motionEventAction, AKEY_EVENT_FLAG_FROM_SYSTEM, metaState, AMOTION_EVENT_EDGE_FLAG_NONE,
             1, &pointerId, &pointerCoords, 1, 1, downTime);
     mAccumulator.clear();
 }
