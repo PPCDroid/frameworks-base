@@ -3,6 +3,7 @@
 #include <ui/KeyCharacterMap.h>
 #include <cutils/properties.h>
 
+#include <utils/ByteOrder.h>
 #include <utils/Log.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -202,6 +203,7 @@ KeyCharacterMap::try_file(const char* filename)
     off_t filesize;
     Header header;
     int err;
+    bool swap = false;
     
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
@@ -229,8 +231,17 @@ KeyCharacterMap::try_file(const char* filename)
         goto cleanup1;
     }
     if (header.endian != 0x12345678) {
-        LOGW("Bad keycharmap endians");
-        goto cleanup1;
+        if (header.endian == fromlel(0x12345678)) {
+            swap = true;
+        } else {
+            LOGW("Bad keycharmap endians");
+            goto cleanup1;
+        }
+    }
+    if (swap) {
+        header.endian = fromlel(header.endian);
+        header.version = fromlel(header.version);
+        header.keycount = fromlel(header.keycount);
     }
     if ((header.version & 0xff) != 2) {
         LOGW("Only support keycharmap version 2 (got 0x%08x)", header.version);
@@ -248,6 +259,16 @@ KeyCharacterMap::try_file(const char* filename)
         LOGW("Error reading keycharmap file");
         free(keys);
         goto cleanup1;
+    }
+
+    if (swap) {
+        for (int i = 0; i < header.keycount; i++) {
+            keys[i].keycode = fromlel(keys[i].keycode);
+            keys[i].display_label = fromles(keys[i].display_label);
+            keys[i].number = fromles(keys[i].number);
+            for (int j = 0; j <= META_MASK; j++)
+                keys[i].data[j] = fromles(keys[i].data[j]);
+        }
     }
 
     // return the object
