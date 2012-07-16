@@ -48,24 +48,6 @@ static inline uint16_t android_swap_short(uint16_t v)
     return (v<<8) | (v>>8);
 }
 
-//#define DEVICE_BYTE_ORDER LITTLE_ENDIAN
-
-#if BYTE_ORDER == DEVICE_BYTE_ORDER
-
-#define	dtohl(x)	(x)
-#define	dtohs(x)	(x)
-#define	htodl(x)	(x)
-#define	htods(x)	(x)
-
-#else
-
-#define	dtohl(x)	(android_swap_long(x))
-#define	dtohs(x)	(android_swap_short(x))
-#define	htodl(x)	(android_swap_long(x))
-#define	htods(x)	(android_swap_short(x))
-
-#endif
-
 #if BYTE_ORDER == LITTLE_ENDIAN
 #define fromlel(x) (x)
 #define fromles(x) (x)
