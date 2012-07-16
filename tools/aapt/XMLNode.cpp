@@ -988,8 +988,8 @@ status_t XMLNode::flatten(const sp<AaptFile>& dest,
 
     ResXMLTree_header header;
     memset(&header, 0, sizeof(header));
-    header.header.type = htods(RES_XML_TYPE);
-    header.header.headerSize = htods(sizeof(header));
+    header.header.type = toles(RES_XML_TYPE);
+    header.header.headerSize = toles(sizeof(header));
 
     const size_t basePos = dest->getSize();
     dest->writeData(&header, sizeof(header));
@@ -1002,12 +1002,12 @@ status_t XMLNode::flatten(const sp<AaptFile>& dest,
             sizeof(ResChunk_header)+(sizeof(uint32_t)*resids.size());
         ResChunk_header* idsHeader = (ResChunk_header*)
             (((const uint8_t*)dest->editData(resIdsPos+resIdsSize))+resIdsPos);
-        idsHeader->type = htods(RES_XML_RESOURCE_MAP_TYPE);
-        idsHeader->headerSize = htods(sizeof(*idsHeader));
-        idsHeader->size = htodl(resIdsSize);
+        idsHeader->type = toles(RES_XML_RESOURCE_MAP_TYPE);
+        idsHeader->headerSize = toles(sizeof(*idsHeader));
+        idsHeader->size = tolel(resIdsSize);
         uint32_t* ids = (uint32_t*)(idsHeader+1);
         for (size_t i=0; i<resids.size(); i++) {
-            *ids++ = htodl(resids[i]);
+            *ids++ = tolel(resids[i]);
         }
     }
 
@@ -1016,7 +1016,7 @@ status_t XMLNode::flatten(const sp<AaptFile>& dest,
     void* data = dest->editData();
     ResXMLTree_header* hd = (ResXMLTree_header*)(((uint8_t*)data)+basePos);
     size_t size = dest->getSize()-basePos;
-    hd->header.size = htodl(dest->getSize()-basePos);
+    hd->header.size = tolel(dest->getSize()-basePos);
 
     NOISY(aout << "XML resource:"
           << HexDump(dest->getData(), dest->getSize()) << endl);
@@ -1351,74 +1351,74 @@ status_t XMLNode::flatten_node(const StringPool& strings, const sp<AaptFile>& de
     
     memset(&node, 0, sizeof(node));
     memset(&attr, 0, sizeof(attr));
-    node.header.headerSize = htods(sizeof(node));
-    node.lineNumber = htodl(getStartLineNumber());
+    node.header.headerSize = toles(sizeof(node));
+    node.lineNumber = tolel(getStartLineNumber());
     if (!stripComments) {
-        node.comment.index = htodl(
+        node.comment.index = tolel(
             mComment.size() > 0 ? strings.offsetForString(mComment) : -1);
         //if (mComment.size() > 0) {
         //  printf("Flattening comment: %s\n", String8(mComment).string());
         //}
     } else {
-        node.comment.index = htodl((uint32_t)-1);
+        node.comment.index = tolel((uint32_t)-1);
     }
     if (type == TYPE_ELEMENT) {
-        node.header.type = htods(RES_XML_START_ELEMENT_TYPE);
+        node.header.type = toles(RES_XML_START_ELEMENT_TYPE);
         extData = &attrExt;
         extSize = sizeof(attrExt);
         memset(&attrExt, 0, sizeof(attrExt));
         if (mNamespaceUri.size() > 0) {
-            attrExt.ns.index = htodl(strings.offsetForString(mNamespaceUri));
+            attrExt.ns.index = tolel(strings.offsetForString(mNamespaceUri));
         } else {
-            attrExt.ns.index = htodl((uint32_t)-1);
+            attrExt.ns.index = tolel((uint32_t)-1);
         }
-        attrExt.name.index = htodl(strings.offsetForString(mElementName));
-        attrExt.attributeStart = htods(sizeof(attrExt));
-        attrExt.attributeSize = htods(sizeof(attr));
-        attrExt.attributeCount = htods(NA);
-        attrExt.idIndex = htods(0);
-        attrExt.classIndex = htods(0);
-        attrExt.styleIndex = htods(0);
+        attrExt.name.index = tolel(strings.offsetForString(mElementName));
+        attrExt.attributeStart = toles(sizeof(attrExt));
+        attrExt.attributeSize = toles(sizeof(attr));
+        attrExt.attributeCount = toles(NA);
+        attrExt.idIndex = toles(0);
+        attrExt.classIndex = toles(0);
+        attrExt.styleIndex = toles(0);
         for (i=0; i<NA; i++) {
             ssize_t idx = mAttributeOrder.valueAt(i);
             const attribute_entry& ae = mAttributes.itemAt(idx);
             if (ae.ns.size() == 0) {
                 if (ae.name == id16) {
-                    attrExt.idIndex = htods(i+1);
+                    attrExt.idIndex = toles(i+1);
                 } else if (ae.name == class16) {
-                    attrExt.classIndex = htods(i+1);
+                    attrExt.classIndex = toles(i+1);
                 } else if (ae.name == style16) {
-                    attrExt.styleIndex = htods(i+1);
+                    attrExt.styleIndex = toles(i+1);
                 }
             }
         }
     } else if (type == TYPE_NAMESPACE) {
-        node.header.type = htods(RES_XML_START_NAMESPACE_TYPE);
+        node.header.type = toles(RES_XML_START_NAMESPACE_TYPE);
         extData = &namespaceExt;
         extSize = sizeof(namespaceExt);
         memset(&namespaceExt, 0, sizeof(namespaceExt));
         if (mNamespacePrefix.size() > 0) {
-            namespaceExt.prefix.index = htodl(strings.offsetForString(mNamespacePrefix));
+            namespaceExt.prefix.index = tolel(strings.offsetForString(mNamespacePrefix));
         } else {
-            namespaceExt.prefix.index = htodl((uint32_t)-1);
+            namespaceExt.prefix.index = tolel((uint32_t)-1);
         }
-        namespaceExt.prefix.index = htodl(strings.offsetForString(mNamespacePrefix));
-        namespaceExt.uri.index = htodl(strings.offsetForString(mNamespaceUri));
+        namespaceExt.prefix.index = tolel(strings.offsetForString(mNamespacePrefix));
+        namespaceExt.uri.index = tolel(strings.offsetForString(mNamespaceUri));
         LOG_ALWAYS_FATAL_IF(NA != 0, "Namespace nodes can't have attributes!");
     } else if (type == TYPE_CDATA) {
-        node.header.type = htods(RES_XML_CDATA_TYPE);
+        node.header.type = toles(RES_XML_CDATA_TYPE);
         extData = &cdataExt;
         extSize = sizeof(cdataExt);
         memset(&cdataExt, 0, sizeof(cdataExt));
-        cdataExt.data.index = htodl(strings.offsetForString(mChars));
-        cdataExt.typedData.size = htods(sizeof(cdataExt.typedData));
+        cdataExt.data.index = tolel(strings.offsetForString(mChars));
+        cdataExt.typedData.size = toles(sizeof(cdataExt.typedData));
         cdataExt.typedData.res0 = 0;
         cdataExt.typedData.dataType = mCharsValue.dataType;
-        cdataExt.typedData.data = htodl(mCharsValue.data);
+        cdataExt.typedData.data = tolel(mCharsValue.data);
         LOG_ALWAYS_FATAL_IF(NA != 0, "CDATA nodes can't have attributes!");
     }
 
-    node.header.size = htodl(sizeof(node) + extSize + (sizeof(attr)*NA));
+    node.header.size = tolel(sizeof(node) + extSize + (sizeof(attr)*NA));
 
     dest->writeData(&node, sizeof(node));
     if (extSize > 0) {
@@ -1429,27 +1429,27 @@ status_t XMLNode::flatten_node(const StringPool& strings, const sp<AaptFile>& de
         ssize_t idx = mAttributeOrder.valueAt(i);
         const attribute_entry& ae = mAttributes.itemAt(idx);
         if (ae.ns.size() > 0) {
-            attr.ns.index = htodl(strings.offsetForString(ae.ns));
+            attr.ns.index = tolel(strings.offsetForString(ae.ns));
         } else {
-            attr.ns.index = htodl((uint32_t)-1);
+            attr.ns.index = tolel((uint32_t)-1);
         }
-        attr.name.index = htodl(ae.namePoolIdx);
+        attr.name.index = tolel(ae.namePoolIdx);
 
         if (!stripRawValues || ae.needStringValue()) {
-            attr.rawValue.index = htodl(strings.offsetForString(ae.string));
+            attr.rawValue.index = tolel(strings.offsetForString(ae.string));
         } else {
-            attr.rawValue.index = htodl((uint32_t)-1);
+            attr.rawValue.index = tolel((uint32_t)-1);
         }
-        attr.typedValue.size = htods(sizeof(attr.typedValue));
+        attr.typedValue.size = toles(sizeof(attr.typedValue));
         if (ae.value.dataType == Res_value::TYPE_NULL
                 || ae.value.dataType == Res_value::TYPE_STRING) {
             attr.typedValue.res0 = 0;
             attr.typedValue.dataType = Res_value::TYPE_STRING;
-            attr.typedValue.data = htodl(strings.offsetForString(ae.string));
+            attr.typedValue.data = tolel(strings.offsetForString(ae.string));
         } else {
             attr.typedValue.res0 = 0;
             attr.typedValue.dataType = ae.value.dataType;
-            attr.typedValue.data = htodl(ae.value.data);
+            attr.typedValue.data = tolel(ae.value.data);
         }
         dest->writeData(&attr, sizeof(attr));
     }
@@ -1465,19 +1465,19 @@ status_t XMLNode::flatten_node(const StringPool& strings, const sp<AaptFile>& de
     if (type == TYPE_ELEMENT) {
         ResXMLTree_endElementExt endElementExt;
         memset(&endElementExt, 0, sizeof(endElementExt));
-        node.header.type = htods(RES_XML_END_ELEMENT_TYPE);
-        node.header.size = htodl(sizeof(node)+sizeof(endElementExt));
-        node.lineNumber = htodl(getEndLineNumber());
-        node.comment.index = htodl((uint32_t)-1);
+        node.header.type = toles(RES_XML_END_ELEMENT_TYPE);
+        node.header.size = tolel(sizeof(node)+sizeof(endElementExt));
+        node.lineNumber = tolel(getEndLineNumber());
+        node.comment.index = tolel((uint32_t)-1);
         endElementExt.ns.index = attrExt.ns.index;
         endElementExt.name.index = attrExt.name.index;
         dest->writeData(&node, sizeof(node));
         dest->writeData(&endElementExt, sizeof(endElementExt));
     } else if (type == TYPE_NAMESPACE) {
-        node.header.type = htods(RES_XML_END_NAMESPACE_TYPE);
-        node.lineNumber = htodl(getEndLineNumber());
-        node.comment.index = htodl((uint32_t)-1);
-        node.header.size = htodl(sizeof(node)+extSize);
+        node.header.type = toles(RES_XML_END_NAMESPACE_TYPE);
+        node.lineNumber = tolel(getEndLineNumber());
+        node.comment.index = tolel((uint32_t)-1);
+        node.header.size = tolel(sizeof(node)+extSize);
         dest->writeData(&node, sizeof(node));
         dest->writeData(extData, extSize);
     }

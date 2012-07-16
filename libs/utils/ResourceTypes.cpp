@@ -78,11 +78,11 @@ inline int isspace16(char16_t c) {
 // range checked; guaranteed to NUL-terminate within the stated number of available slots
 // NOTE: if this truncates the dst string due to running out of space, no attempt is
 // made to avoid splitting surrogate pairs.
-static void strcpy16_dtoh(uint16_t* dst, const uint16_t* src, size_t avail)
+static void strcpy16_fromle(uint16_t* dst, const uint16_t* src, size_t avail)
 {
     uint16_t* last = dst + avail - 1;
     while (*src && (dst < last)) {
-        char16_t s = dtohs(*src);
+        char16_t s = fromles(*src);
         *dst++ = s;
         src++;
     }
@@ -94,8 +94,8 @@ static status_t validate_chunk(const ResChunk_header* chunk,
                                const uint8_t* dataEnd,
                                const char* name)
 {
-    const uint16_t headerSize = dtohs(chunk->headerSize);
-    const uint32_t size = dtohl(chunk->size);
+    const uint16_t headerSize = fromles(chunk->headerSize);
+    const uint32_t size = fromlel(chunk->size);
 
     if (headerSize >= minSize) {
         if (headerSize <= size) {
@@ -121,12 +121,12 @@ static status_t validate_chunk(const ResChunk_header* chunk,
     return BAD_TYPE;
 }
 
-inline void Res_value::copyFrom_dtoh(const Res_value& src)
+inline void Res_value::copyFromLE(const Res_value& src)
 {
-    size = dtohs(src.size);
+    size = fromles(src.size);
     res0 = src.res0;
     dataType = src.dataType;
-    data = dtohl(src.data);
+    data = fromlel(src.data);
 }
 
 void Res_png_9patch::deviceToFile()
@@ -252,7 +252,7 @@ status_t ResStringPool::setTo(const void* data, size_t size, bool copyData)
 
     uninit();
 
-    const bool notDeviceEndian = htods(0xf0) != 0xf0;
+    const bool notDeviceEndian = toles(0xf0) != 0xf0;
 
     if (copyData || notDeviceEndian) {
         mOwnedData = malloc(size);
@@ -267,14 +267,14 @@ status_t ResStringPool::setTo(const void* data, size_t size, bool copyData)
 
     if (notDeviceEndian) {
         ResStringPool_header* h = const_cast<ResStringPool_header*>(mHeader);
-        h->header.headerSize = dtohs(mHeader->header.headerSize);
-        h->header.type = dtohs(mHeader->header.type);
-        h->header.size = dtohl(mHeader->header.size);
-        h->stringCount = dtohl(mHeader->stringCount);
-        h->styleCount = dtohl(mHeader->styleCount);
-        h->flags = dtohl(mHeader->flags);
-        h->stringsStart = dtohl(mHeader->stringsStart);
-        h->stylesStart = dtohl(mHeader->stylesStart);
+        h->header.headerSize = fromles(mHeader->header.headerSize);
+        h->header.type = fromles(mHeader->header.type);
+        h->header.size = fromlel(mHeader->header.size);
+        h->stringCount = fromlel(mHeader->stringCount);
+        h->styleCount = fromlel(mHeader->styleCount);
+        h->flags = fromlel(mHeader->flags);
+        h->stringsStart = fromlel(mHeader->stringsStart);
+        h->stylesStart = fromlel(mHeader->stylesStart);
     }
 
     if (mHeader->header.headerSize > mHeader->header.size
@@ -337,13 +337,13 @@ status_t ResStringPool::setTo(const void* data, size_t size, bool copyData)
             size_t i;
             uint32_t* e = const_cast<uint32_t*>(mEntries);
             for (i=0; i<mHeader->stringCount; i++) {
-                e[i] = dtohl(mEntries[i]);
+                e[i] = fromlel(mEntries[i]);
             }
             if (!(mHeader->flags&ResStringPool_header::UTF8_FLAG)) {
                 const char16_t* strings = (const char16_t*)mStrings;
                 char16_t* s = const_cast<char16_t*>(strings);
                 for (i=0; i<mStringPoolSize; i++) {
-                    s[i] = dtohs(strings[i]);
+                    s[i] = fromles(strings[i]);
                 }
             }
         }
@@ -388,17 +388,17 @@ status_t ResStringPool::setTo(const void* data, size_t size, bool copyData)
             size_t i;
             uint32_t* e = const_cast<uint32_t*>(mEntryStyles);
             for (i=0; i<mHeader->styleCount; i++) {
-                e[i] = dtohl(mEntryStyles[i]);
+                e[i] = fromlel(mEntryStyles[i]);
             }
             uint32_t* s = const_cast<uint32_t*>(mStyles);
             for (i=0; i<mStylePoolSize; i++) {
-                s[i] = dtohl(mStyles[i]);
+                s[i] = fromlel(mStyles[i]);
             }
         }
 
         const ResStringPool_span endSpan = {
-            { htodl(ResStringPool_span::END) },
-            htodl(ResStringPool_span::END), htodl(ResStringPool_span::END)
+            { tolel(ResStringPool_span::END) },
+            tolel(ResStringPool_span::END), tolel(ResStringPool_span::END)
         };
         if (memcmp(&mStyles[mStylePoolSize-(sizeof(endSpan)/sizeof(uint32_t))],
                    &endSpan, sizeof(endSpan)) != 0) {
@@ -649,7 +649,7 @@ ResXMLParser::event_code_t ResXMLParser::next()
 
 int32_t ResXMLParser::getCommentID() const
 {
-    return mCurNode != NULL ? dtohl(mCurNode->comment.index) : -1;
+    return mCurNode != NULL ? fromlel(mCurNode->comment.index) : -1;
 }
 
 const uint16_t* ResXMLParser::getComment(size_t* outLen) const
@@ -660,13 +660,13 @@ const uint16_t* ResXMLParser::getComment(size_t* outLen) const
 
 uint32_t ResXMLParser::getLineNumber() const
 {
-    return mCurNode != NULL ? dtohl(mCurNode->lineNumber) : -1;
+    return mCurNode != NULL ? fromlel(mCurNode->lineNumber) : -1;
 }
 
 int32_t ResXMLParser::getTextID() const
 {
     if (mEventCode == TEXT) {
-        return dtohl(((const ResXMLTree_cdataExt*)mCurExt)->data.index);
+        return fromlel(((const ResXMLTree_cdataExt*)mCurExt)->data.index);
     }
     return -1;
 }
@@ -680,7 +680,7 @@ const uint16_t* ResXMLParser::getText(size_t* outLen) const
 ssize_t ResXMLParser::getTextValue(Res_value* outValue) const
 {
     if (mEventCode == TEXT) {
-        outValue->copyFrom_dtoh(((const ResXMLTree_cdataExt*)mCurExt)->typedData);
+        outValue->copyFromLE(((const ResXMLTree_cdataExt*)mCurExt)->typedData);
         return sizeof(Res_value);
     }
     return BAD_TYPE;
@@ -689,7 +689,7 @@ ssize_t ResXMLParser::getTextValue(Res_value* outValue) const
 int32_t ResXMLParser::getNamespacePrefixID() const
 {
     if (mEventCode == START_NAMESPACE || mEventCode == END_NAMESPACE) {
-        return dtohl(((const ResXMLTree_namespaceExt*)mCurExt)->prefix.index);
+        return fromlel(((const ResXMLTree_namespaceExt*)mCurExt)->prefix.index);
     }
     return -1;
 }
@@ -704,7 +704,7 @@ const uint16_t* ResXMLParser::getNamespacePrefix(size_t* outLen) const
 int32_t ResXMLParser::getNamespaceUriID() const
 {
     if (mEventCode == START_NAMESPACE || mEventCode == END_NAMESPACE) {
-        return dtohl(((const ResXMLTree_namespaceExt*)mCurExt)->uri.index);
+        return fromlel(((const ResXMLTree_namespaceExt*)mCurExt)->uri.index);
     }
     return -1;
 }
@@ -719,10 +719,10 @@ const uint16_t* ResXMLParser::getNamespaceUri(size_t* outLen) const
 int32_t ResXMLParser::getElementNamespaceID() const
 {
     if (mEventCode == START_TAG) {
-        return dtohl(((const ResXMLTree_attrExt*)mCurExt)->ns.index);
+        return fromlel(((const ResXMLTree_attrExt*)mCurExt)->ns.index);
     }
     if (mEventCode == END_TAG) {
-        return dtohl(((const ResXMLTree_endElementExt*)mCurExt)->ns.index);
+        return fromlel(((const ResXMLTree_endElementExt*)mCurExt)->ns.index);
     }
     return -1;
 }
@@ -736,10 +736,10 @@ const uint16_t* ResXMLParser::getElementNamespace(size_t* outLen) const
 int32_t ResXMLParser::getElementNameID() const
 {
     if (mEventCode == START_TAG) {
-        return dtohl(((const ResXMLTree_attrExt*)mCurExt)->name.index);
+        return fromlel(((const ResXMLTree_attrExt*)mCurExt)->name.index);
     }
     if (mEventCode == END_TAG) {
-        return dtohl(((const ResXMLTree_endElementExt*)mCurExt)->name.index);
+        return fromlel(((const ResXMLTree_endElementExt*)mCurExt)->name.index);
     }
     return -1;
 }
@@ -753,7 +753,7 @@ const uint16_t* ResXMLParser::getElementName(size_t* outLen) const
 size_t ResXMLParser::getAttributeCount() const
 {
     if (mEventCode == START_TAG) {
-        return dtohs(((const ResXMLTree_attrExt*)mCurExt)->attributeCount);
+        return fromles(((const ResXMLTree_attrExt*)mCurExt)->attributeCount);
     }
     return 0;
 }
@@ -762,12 +762,12 @@ int32_t ResXMLParser::getAttributeNamespaceID(size_t idx) const
 {
     if (mEventCode == START_TAG) {
         const ResXMLTree_attrExt* tag = (const ResXMLTree_attrExt*)mCurExt;
-        if (idx < dtohs(tag->attributeCount)) {
+        if (idx < fromles(tag->attributeCount)) {
             const ResXMLTree_attribute* attr = (const ResXMLTree_attribute*)
                 (((const uint8_t*)tag)
-                 + dtohs(tag->attributeStart)
-                 + (dtohs(tag->attributeSize)*idx));
-            return dtohl(attr->ns.index);
+                 + fromles(tag->attributeStart)
+                 + (fromles(tag->attributeSize)*idx));
+            return fromlel(attr->ns.index);
         }
     }
     return -2;
@@ -785,12 +785,12 @@ int32_t ResXMLParser::getAttributeNameID(size_t idx) const
 {
     if (mEventCode == START_TAG) {
         const ResXMLTree_attrExt* tag = (const ResXMLTree_attrExt*)mCurExt;
-        if (idx < dtohs(tag->attributeCount)) {
+        if (idx < fromles(tag->attributeCount)) {
             const ResXMLTree_attribute* attr = (const ResXMLTree_attribute*)
                 (((const uint8_t*)tag)
-                 + dtohs(tag->attributeStart)
-                 + (dtohs(tag->attributeSize)*idx));
-            return dtohl(attr->name.index);
+                 + fromles(tag->attributeStart)
+                 + (fromles(tag->attributeSize)*idx));
+            return fromlel(attr->name.index);
         }
     }
     return -1;
@@ -808,7 +808,7 @@ uint32_t ResXMLParser::getAttributeNameResID(size_t idx) const
 {
     int32_t id = getAttributeNameID(idx);
     if (id >= 0 && (size_t)id < mTree.mNumResIds) {
-        return dtohl(mTree.mResIds[id]);
+        return fromlel(mTree.mResIds[id]);
     }
     return 0;
 }
@@ -817,12 +817,12 @@ int32_t ResXMLParser::getAttributeValueStringID(size_t idx) const
 {
     if (mEventCode == START_TAG) {
         const ResXMLTree_attrExt* tag = (const ResXMLTree_attrExt*)mCurExt;
-        if (idx < dtohs(tag->attributeCount)) {
+        if (idx < fromles(tag->attributeCount)) {
             const ResXMLTree_attribute* attr = (const ResXMLTree_attribute*)
                 (((const uint8_t*)tag)
-                 + dtohs(tag->attributeStart)
-                 + (dtohs(tag->attributeSize)*idx));
-            return dtohl(attr->rawValue.index);
+                 + fromles(tag->attributeStart)
+                 + (fromles(tag->attributeSize)*idx));
+            return fromlel(attr->rawValue.index);
         }
     }
     return -1;
@@ -839,11 +839,11 @@ int32_t ResXMLParser::getAttributeDataType(size_t idx) const
 {
     if (mEventCode == START_TAG) {
         const ResXMLTree_attrExt* tag = (const ResXMLTree_attrExt*)mCurExt;
-        if (idx < dtohs(tag->attributeCount)) {
+        if (idx < fromles(tag->attributeCount)) {
             const ResXMLTree_attribute* attr = (const ResXMLTree_attribute*)
                 (((const uint8_t*)tag)
-                 + dtohs(tag->attributeStart)
-                 + (dtohs(tag->attributeSize)*idx));
+                 + fromles(tag->attributeStart)
+                 + (fromles(tag->attributeSize)*idx));
             return attr->typedValue.dataType;
         }
     }
@@ -854,12 +854,12 @@ int32_t ResXMLParser::getAttributeData(size_t idx) const
 {
     if (mEventCode == START_TAG) {
         const ResXMLTree_attrExt* tag = (const ResXMLTree_attrExt*)mCurExt;
-        if (idx < dtohs(tag->attributeCount)) {
+        if (idx < fromles(tag->attributeCount)) {
             const ResXMLTree_attribute* attr = (const ResXMLTree_attribute*)
                 (((const uint8_t*)tag)
-                 + dtohs(tag->attributeStart)
-                 + (dtohs(tag->attributeSize)*idx));
-            return dtohl(attr->typedValue.data);
+                 + fromles(tag->attributeStart)
+                 + (fromles(tag->attributeSize)*idx));
+            return fromlel(attr->typedValue.data);
         }
     }
     return 0;
@@ -869,12 +869,12 @@ ssize_t ResXMLParser::getAttributeValue(size_t idx, Res_value* outValue) const
 {
     if (mEventCode == START_TAG) {
         const ResXMLTree_attrExt* tag = (const ResXMLTree_attrExt*)mCurExt;
-        if (idx < dtohs(tag->attributeCount)) {
+        if (idx < fromles(tag->attributeCount)) {
             const ResXMLTree_attribute* attr = (const ResXMLTree_attribute*)
                 (((const uint8_t*)tag)
-                 + dtohs(tag->attributeStart)
-                 + (dtohs(tag->attributeSize)*idx));
-            outValue->copyFrom_dtoh(attr->typedValue);
+                 + fromles(tag->attributeStart)
+                 + (fromles(tag->attributeSize)*idx));
+            outValue->copyFromLE(attr->typedValue);
             return sizeof(Res_value);
         }
     }
@@ -920,7 +920,7 @@ ssize_t ResXMLParser::indexOfAttribute(const char16_t* ns, size_t nsLen,
 ssize_t ResXMLParser::indexOfID() const
 {
     if (mEventCode == START_TAG) {
-        const ssize_t idx = dtohs(((const ResXMLTree_attrExt*)mCurExt)->idIndex);
+        const ssize_t idx = fromles(((const ResXMLTree_attrExt*)mCurExt)->idIndex);
         if (idx > 0) return (idx-1);
     }
     return NAME_NOT_FOUND;
@@ -929,7 +929,7 @@ ssize_t ResXMLParser::indexOfID() const
 ssize_t ResXMLParser::indexOfClass() const
 {
     if (mEventCode == START_TAG) {
-        const ssize_t idx = dtohs(((const ResXMLTree_attrExt*)mCurExt)->classIndex);
+        const ssize_t idx = fromles(((const ResXMLTree_attrExt*)mCurExt)->classIndex);
         if (idx > 0) return (idx-1);
     }
     return NAME_NOT_FOUND;
@@ -938,7 +938,7 @@ ssize_t ResXMLParser::indexOfClass() const
 ssize_t ResXMLParser::indexOfStyle() const
 {
     if (mEventCode == START_TAG) {
-        const ssize_t idx = dtohs(((const ResXMLTree_attrExt*)mCurExt)->styleIndex);
+        const ssize_t idx = fromles(((const ResXMLTree_attrExt*)mCurExt)->styleIndex);
         if (idx > 0) return (idx-1);
     }
     return NAME_NOT_FOUND;
@@ -952,7 +952,7 @@ ResXMLParser::event_code_t ResXMLParser::nextNode()
 
     do {
         const ResXMLTree_node* next = (const ResXMLTree_node*)
-            (((const uint8_t*)mCurNode) + dtohl(mCurNode->header.size));
+            (((const uint8_t*)mCurNode) + fromlel(mCurNode->header.size));
         //LOGW("Next node: prev=%p, next=%p\n", mCurNode, next);
         
         if (((const uint8_t*)next) >= mTree.mDataEnd) {
@@ -966,11 +966,11 @@ ResXMLParser::event_code_t ResXMLParser::nextNode()
         }
 
         mCurNode = next;
-        const uint16_t headerSize = dtohs(next->header.headerSize);
-        const uint32_t totalSize = dtohl(next->header.size);
+        const uint16_t headerSize = fromles(next->header.headerSize);
+        const uint32_t totalSize = fromlel(next->header.size);
         mCurExt = ((const uint8_t*)next) + headerSize;
         size_t minExtSize = 0;
-        event_code_t eventCode = (event_code_t)dtohs(next->header.type);
+        event_code_t eventCode = (event_code_t)fromles(next->header.type);
         switch ((mEventCode=eventCode)) {
             case RES_XML_START_NAMESPACE_TYPE:
             case RES_XML_END_NAMESPACE_TYPE:
@@ -987,14 +987,14 @@ ResXMLParser::event_code_t ResXMLParser::nextNode()
                 break;
             default:
                 LOGW("Unknown XML block: header type %d in node at %d\n",
-                     (int)dtohs(next->header.type),
+                     (int)fromles(next->header.type),
                      (int)(((const uint8_t*)next)-((const uint8_t*)mTree.mHeader)));
                 continue;
         }
         
         if ((totalSize-headerSize) < minExtSize) {
             LOGW("Bad XML block: header type 0x%x in node at 0x%x has size %d, need %d\n",
-                 (int)dtohs(next->header.type),
+                 (int)fromles(next->header.type),
                  (int)(((const uint8_t*)next)-((const uint8_t*)mTree.mHeader)),
                  (int)(totalSize-headerSize), (int)minExtSize);
             return (mEventCode=BAD_DOCUMENT);
@@ -1063,11 +1063,11 @@ status_t ResXMLTree::setTo(const void* data, size_t size, bool copyData)
     }
 
     mHeader = (const ResXMLTree_header*)data;
-    mSize = dtohl(mHeader->header.size);
-    if (dtohs(mHeader->header.headerSize) > mSize || mSize > size) {
+    mSize = fromlel(mHeader->header.size);
+    if (fromles(mHeader->header.headerSize) > mSize || mSize > size) {
         LOGW("Bad XML block: header size %d or total size %d is larger than data size %d\n",
-             (int)dtohs(mHeader->header.headerSize),
-             (int)dtohl(mHeader->header.size), (int)size);
+             (int)fromles(mHeader->header.headerSize),
+             (int)fromlel(mHeader->header.size), (int)size);
         mError = BAD_TYPE;
         restart();
         return mError;
@@ -1082,25 +1082,25 @@ status_t ResXMLTree::setTo(const void* data, size_t size, bool copyData)
     // First look for a couple interesting chunks: the string block
     // and first XML node.
     const ResChunk_header* chunk =
-        (const ResChunk_header*)(((const uint8_t*)mHeader) + dtohs(mHeader->header.headerSize));
+        (const ResChunk_header*)(((const uint8_t*)mHeader) + fromles(mHeader->header.headerSize));
     const ResChunk_header* lastChunk = chunk;
     while (((const uint8_t*)chunk) < (mDataEnd-sizeof(ResChunk_header)) &&
-           ((const uint8_t*)chunk) < (mDataEnd-dtohl(chunk->size))) {
+           ((const uint8_t*)chunk) < (mDataEnd-fromlel(chunk->size))) {
         status_t err = validate_chunk(chunk, sizeof(ResChunk_header), mDataEnd, "XML");
         if (err != NO_ERROR) {
             mError = err;
             goto done;
         }
-        const uint16_t type = dtohs(chunk->type);
-        const size_t size = dtohl(chunk->size);
+        const uint16_t type = fromles(chunk->type);
+        const size_t size = fromlel(chunk->size);
         XML_NOISY(printf("Scanning @ %p: type=0x%x, size=0x%x\n",
                      (void*)(((uint32_t)chunk)-((uint32_t)mHeader)), type, size));
         if (type == RES_STRING_POOL_TYPE) {
             mStrings.setTo(chunk, size);
         } else if (type == RES_XML_RESOURCE_MAP_TYPE) {
             mResIds = (const uint32_t*)
-                (((const uint8_t*)chunk)+dtohs(chunk->headerSize));
-            mNumResIds = (dtohl(chunk->size)-dtohs(chunk->headerSize))/sizeof(uint32_t);
+                (((const uint8_t*)chunk)+fromles(chunk->headerSize));
+            mNumResIds = (fromlel(chunk->size)-fromles(chunk->headerSize))/sizeof(uint32_t);
         } else if (type >= RES_XML_FIRST_CHUNK_TYPE
                    && type <= RES_XML_LAST_CHUNK_TYPE) {
             if (validateNode((const ResXMLTree_node*)chunk) != NO_ERROR) {
@@ -1155,7 +1155,7 @@ void ResXMLTree::uninit()
 
 status_t ResXMLTree::validateNode(const ResXMLTree_node* node) const
 {
-    const uint16_t eventCode = dtohs(node->header.type);
+    const uint16_t eventCode = fromles(node->header.type);
 
     status_t err = validate_chunk(
         &node->header, sizeof(ResXMLTree_node),
@@ -1167,20 +1167,20 @@ status_t ResXMLTree::validateNode(const ResXMLTree_node* node) const
             return NO_ERROR;
         }
 
-        const uint16_t headerSize = dtohs(node->header.headerSize);
-        const uint32_t size = dtohl(node->header.size);
+        const uint16_t headerSize = fromles(node->header.headerSize);
+        const uint32_t size = fromlel(node->header.size);
         const ResXMLTree_attrExt* attrExt = (const ResXMLTree_attrExt*)
             (((const uint8_t*)node) + headerSize);
         // check for sensical values pulled out of the stream so far...
         if ((size >= headerSize + sizeof(ResXMLTree_attrExt))
                 && ((void*)attrExt > (void*)node)) {
-            const size_t attrSize = ((size_t)dtohs(attrExt->attributeSize))
-                * dtohs(attrExt->attributeCount);
-            if ((dtohs(attrExt->attributeStart)+attrSize) <= (size-headerSize)) {
+            const size_t attrSize = ((size_t)fromles(attrExt->attributeSize))
+                * fromles(attrExt->attributeCount);
+            if ((fromles(attrExt->attributeStart)+attrSize) <= (size-headerSize)) {
                 return NO_ERROR;
             }
             LOGW("Bad XML block: node attributes use 0x%x bytes, only have 0x%x bytes\n",
-                    (unsigned int)(dtohs(attrExt->attributeStart)+attrSize),
+                    (unsigned int)(fromles(attrExt->attributeStart)+attrSize),
                     (unsigned int)(size-headerSize));
         }
         else {
@@ -1193,10 +1193,10 @@ status_t ResXMLTree::validateNode(const ResXMLTree_node* node) const
     return err;
 
 #if 0
-    const bool isStart = dtohs(node->header.type) == RES_XML_START_ELEMENT_TYPE;
+    const bool isStart = fromles(node->header.type) == RES_XML_START_ELEMENT_TYPE;
 
-    const uint16_t headerSize = dtohs(node->header.headerSize);
-    const uint32_t size = dtohl(node->header.size);
+    const uint16_t headerSize = fromles(node->header.headerSize);
+    const uint32_t size = fromlel(node->header.size);
 
     if (headerSize >= (isStart ? sizeof(ResXMLTree_attrNode) : sizeof(ResXMLTree_node))) {
         if (size >= headerSize) {
@@ -1204,12 +1204,12 @@ status_t ResXMLTree::validateNode(const ResXMLTree_node* node) const
                 if (!isStart) {
                     return NO_ERROR;
                 }
-                if ((((size_t)dtohs(node->attributeSize))*dtohs(node->attributeCount))
+                if ((((size_t)fromles(node->attributeSize))*fromles(node->attributeCount))
                         <= (size-headerSize)) {
                     return NO_ERROR;
                 }
                 LOGW("Bad XML block: node attributes use 0x%x bytes, only have 0x%x bytes\n",
-                        ((int)dtohs(node->attributeSize))*dtohs(node->attributeCount),
+                        ((int)fromles(node->attributeSize))*fromles(node->attributeCount),
                         (int)(size-headerSize));
                 return BAD_TYPE;
             }
@@ -1710,7 +1710,7 @@ status_t ResTable::add(const void* data, size_t size, void* cookie,
     header->cookie = cookie;
     mHeaders.add(header);
 
-    const bool notDeviceEndian = htods(0xf0) != 0xf0;
+    const bool notDeviceEndian = toles(0xf0) != 0xf0;
 
     LOAD_TABLE_NOISY(
         LOGV("Adding resources to ResTable: data=%p, size=0x%x, cookie=%p, asset=%p, copy=%d\n",
@@ -1726,22 +1726,22 @@ status_t ResTable::add(const void* data, size_t size, void* cookie,
     }
 
     header->header = (const ResTable_header*)data;
-    header->size = dtohl(header->header->header.size);
+    header->size = fromlel(header->header->header.size);
     //LOGI("Got size 0x%x, again size 0x%x, raw size 0x%x\n", header->size,
-    //     dtohl(header->header->header.size), header->header->header.size);
+    //     fromlel(header->header->header.size), header->header->header.size);
     LOAD_TABLE_NOISY(LOGV("Loading ResTable @%p:\n", header->header));
     LOAD_TABLE_NOISY(printHexData(2, header->header, header->size < 256 ? header->size : 256,
                                   16, 16, 0, false, printToLogFunc));
-    if (dtohs(header->header->header.headerSize) > header->size
+    if (fromles(header->header->header.headerSize) > header->size
             || header->size > size) {
         LOGW("Bad resource table: header size 0x%x or total size 0x%x is larger than data size 0x%x\n",
-             (int)dtohs(header->header->header.headerSize),
+             (int)fromles(header->header->header.headerSize),
              (int)header->size, (int)size);
         return (mError=BAD_TYPE);
     }
-    if (((dtohs(header->header->header.headerSize)|header->size)&0x3) != 0) {
+    if (((fromles(header->header->header.headerSize)|header->size)&0x3) != 0) {
         LOGW("Bad resource table: header size 0x%x or total size 0x%x is not on an integer boundary\n",
-             (int)dtohs(header->header->header.headerSize),
+             (int)fromles(header->header->header.headerSize),
              (int)header->size);
         return (mError=BAD_TYPE);
     }
@@ -1752,18 +1752,18 @@ status_t ResTable::add(const void* data, size_t size, void* cookie,
 
     const ResChunk_header* chunk =
         (const ResChunk_header*)(((const uint8_t*)header->header)
-                                 + dtohs(header->header->header.headerSize));
+                                 + fromles(header->header->header.headerSize));
     while (((const uint8_t*)chunk) <= (header->dataEnd-sizeof(ResChunk_header)) &&
-           ((const uint8_t*)chunk) <= (header->dataEnd-dtohl(chunk->size))) {
+           ((const uint8_t*)chunk) <= (header->dataEnd-fromlel(chunk->size))) {
         status_t err = validate_chunk(chunk, sizeof(ResChunk_header), header->dataEnd, "ResTable");
         if (err != NO_ERROR) {
             return (mError=err);
         }
         TABLE_NOISY(LOGV("Chunk: type=0x%x, headerSize=0x%x, size=0x%x, pos=%p\n",
-                     dtohs(chunk->type), dtohs(chunk->headerSize), dtohl(chunk->size),
+                     fromles(chunk->type), fromles(chunk->headerSize), fromlel(chunk->size),
                      (void*)(((const uint8_t*)chunk) - ((const uint8_t*)header->header))));
-        const size_t csize = dtohl(chunk->size);
-        const uint16_t ctype = dtohs(chunk->type);
+        const size_t csize = fromlel(chunk->size);
+        const uint16_t ctype = fromles(chunk->type);
         if (ctype == RES_STRING_POOL_TYPE) {
             if (header->values.getError() != NO_ERROR) {
                 // Only use the first string chunk; ignore any others that
@@ -1776,9 +1776,9 @@ status_t ResTable::add(const void* data, size_t size, void* cookie,
                 LOGW("Multiple string chunks found in resource table.");
             }
         } else if (ctype == RES_TABLE_PACKAGE_TYPE) {
-            if (curPackage >= dtohl(header->header->packageCount)) {
+            if (curPackage >= fromlel(header->header->packageCount)) {
                 LOGW("More package chunks were found than the %d declared in the header.",
-                     dtohl(header->header->packageCount));
+                     fromlel(header->header->packageCount));
                 return (mError=BAD_TYPE);
             }
             if (parsePackage((ResTable_package*)chunk, header) != NO_ERROR) {
@@ -1794,9 +1794,9 @@ status_t ResTable::add(const void* data, size_t size, void* cookie,
             (((const uint8_t*)chunk) + csize);
     }
 
-    if (curPackage < dtohl(header->header->packageCount)) {
+    if (curPackage < fromlel(header->header->packageCount)) {
         LOGW("Fewer package chunks (%d) were found than the %d declared in the header.",
-             (int)curPackage, dtohl(header->header->packageCount));
+             (int)curPackage, fromlel(header->header->packageCount));
         return (mError=BAD_TYPE);
     }
     mError = header->values.getError();
@@ -1877,7 +1877,7 @@ bool ResTable::getResourceName(uint32_t resID, resource_name* outName) const
         outName->packageLen = grp->name.size();
         outName->type = grp->basePackage->typeStrings.stringAt(t, &outName->typeLen);
         outName->name = grp->basePackage->keyStrings.stringAt(
-            dtohl(entry->key.index), &outName->nameLen);
+            fromlel(entry->key.index), &outName->nameLen);
         return true;
     }
 
@@ -1941,7 +1941,7 @@ ssize_t ResTable::getResource(uint32_t resID, Res_value* outValue, bool mayBeBag
             continue;
         }
 
-        if ((dtohs(entry->flags)&entry->FLAG_COMPLEX) != 0) {
+        if ((fromles(entry->flags)&entry->FLAG_COMPLEX) != 0) {
             if (!mayBeBag) {
                 LOGW("Requesting resource %p failed because it is complex\n",
                      (void*)resID);
@@ -1950,22 +1950,22 @@ ssize_t ResTable::getResource(uint32_t resID, Res_value* outValue, bool mayBeBag
         }
 
         TABLE_NOISY(aout << "Resource type data: "
-              << HexDump(type, dtohl(type->header.size)) << endl);
+              << HexDump(type, fromlel(type->header.size)) << endl);
         
-        if ((size_t)offset > (dtohl(type->header.size)-sizeof(Res_value))) {
+        if ((size_t)offset > (fromlel(type->header.size)-sizeof(Res_value))) {
             LOGW("ResTable_item at %d is beyond type chunk data %d",
-                 (int)offset, dtohl(type->header.size));
+                 (int)offset, fromlel(type->header.size));
             return BAD_TYPE;
         }
         
         const Res_value* item =
             (const Res_value*)(((const uint8_t*)type) + offset);
         ResTable_config thisConfig;
-        thisConfig.copyFromDtoH(type->config);
+        thisConfig.copyFromLE(type->config);
 
         if (outSpecFlags != NULL) {
             if (typeClass->typeSpecFlags != NULL) {
-                *outSpecFlags |= dtohl(typeClass->typeSpecFlags[e]);
+                *outSpecFlags |= fromlel(typeClass->typeSpecFlags[e]);
             } else {
                 *outSpecFlags = -1;
             }
@@ -1983,10 +1983,10 @@ ssize_t ResTable::getResource(uint32_t resID, Res_value* outValue, bool mayBeBag
     TABLE_NOISY(printf("Found result: package %p\n", bestPackage));
 
     if (bestValue) {
-        outValue->size = dtohs(bestValue->size);
+        outValue->size = fromles(bestValue->size);
         outValue->res0 = bestValue->res0;
         outValue->dataType = bestValue->dataType;
-        outValue->data = dtohl(bestValue->data);
+        outValue->data = fromlel(bestValue->data);
         if (outConfig != NULL) {
             *outConfig = bestItem;
         }
@@ -2186,17 +2186,17 @@ ssize_t ResTable::getBagLocked(uint32_t resID, const bag_entry** outBag,
             continue;
         }
 
-        if ((dtohs(entry->flags)&entry->FLAG_COMPLEX) == 0) {
+        if ((fromles(entry->flags)&entry->FLAG_COMPLEX) == 0) {
             LOGW("Skipping entry %p in package table %d because it is not complex!\n",
                  (void*)resID, (int)ip);
             continue;
         }
 
-        const uint16_t entrySize = dtohs(entry->size);
+        const uint16_t entrySize = fromles(entry->size);
         const uint32_t parent = entrySize >= sizeof(ResTable_map_entry)
-            ? dtohl(((const ResTable_map_entry*)entry)->parent.ident) : 0;
+            ? fromlel(((const ResTable_map_entry*)entry)->parent.ident) : 0;
         const uint32_t count = entrySize >= sizeof(ResTable_map_entry)
-            ? dtohl(((const ResTable_map_entry*)entry)->count) : 0;
+            ? fromlel(((const ResTable_map_entry*)entry)->count) : 0;
         
         size_t N = count;
 
@@ -2239,7 +2239,7 @@ ssize_t ResTable::getBagLocked(uint32_t resID, const bag_entry** outBag,
         }
 
         if (typeClass->typeSpecFlags != NULL) {
-            set->typeSpecFlags |= dtohl(typeClass->typeSpecFlags[e]);
+            set->typeSpecFlags |= fromlel(typeClass->typeSpecFlags[e]);
         } else {
             set->typeSpecFlags = -1;
         }
@@ -2255,15 +2255,15 @@ ssize_t ResTable::getBagLocked(uint32_t resID, const bag_entry** outBag,
         while (pos < count) {
             TABLE_NOISY(printf("Now at %p\n", (void*)curOff));
 
-            if ((size_t)curOff > (dtohl(type->header.size)-sizeof(ResTable_map))) {
+            if ((size_t)curOff > (fromlel(type->header.size)-sizeof(ResTable_map))) {
                 LOGW("ResTable_map at %d is beyond type chunk data %d",
-                     (int)curOff, dtohl(type->header.size));
+                     (int)curOff, fromlel(type->header.size));
                 return BAD_TYPE;
             }
             map = (const ResTable_map*)(((const uint8_t*)type) + curOff);
             N++;
 
-            const uint32_t newName = htodl(map->name.ident);
+            const uint32_t newName = tolel(map->name.ident);
             bool isInside;
             uint32_t oldName = 0;
             while ((isInside=(curEntry < set->numAttrs))
@@ -2306,7 +2306,7 @@ ssize_t ResTable::getBagLocked(uint32_t resID, const bag_entry** outBag,
 
             cur->stringBlock = package->header->index;
             cur->map.name.ident = newName;
-            cur->map.value.copyFrom_dtoh(map->value);
+            cur->map.value.copyFromLE(map->value);
             TABLE_NOISY(printf("Setting entry #%d %p: block=%d, name=0x%08x, type=%d, data=0x%08x\n",
                          curEntry, cur, cur->stringBlock, cur->map.name.ident,
                          cur->map.value.dataType, cur->map.value.data));
@@ -2314,7 +2314,7 @@ ssize_t ResTable::getBagLocked(uint32_t resID, const bag_entry** outBag,
             // On to the next!
             curEntry++;
             pos++;
-            const size_t size = dtohs(map->value.size);
+            const size_t size = fromles(map->value.size);
             curOff += size + sizeof(*map)-sizeof(map->value);
         };
         if (curEntry > set->numAttrs) {
@@ -2510,24 +2510,24 @@ nope:
         size_t NTC = typeConfigs->configs.size();
         for (size_t tci=0; tci<NTC; tci++) {
             const ResTable_type* const ty = typeConfigs->configs[tci];
-            const uint32_t typeOffset = dtohl(ty->entriesStart);
+            const uint32_t typeOffset = fromlel(ty->entriesStart);
 
-            const uint8_t* const end = ((const uint8_t*)ty) + dtohl(ty->header.size);
+            const uint8_t* const end = ((const uint8_t*)ty) + fromlel(ty->header.size);
             const uint32_t* const eindex = (const uint32_t*)
-                (((const uint8_t*)ty) + dtohs(ty->header.headerSize));
+                (((const uint8_t*)ty) + fromles(ty->header.headerSize));
 
-            const size_t NE = dtohl(ty->entryCount);
+            const size_t NE = fromlel(ty->entryCount);
             for (size_t i=0; i<NE; i++) {
-                uint32_t offset = dtohl(eindex[i]);
+                uint32_t offset = fromlel(eindex[i]);
                 if (offset == ResTable_type::NO_ENTRY) {
                     continue;
                 }
                 
                 offset += typeOffset;
                 
-                if (offset > (dtohl(ty->header.size)-sizeof(ResTable_entry))) {
+                if (offset > (fromlel(ty->header.size)-sizeof(ResTable_entry))) {
                     LOGW("ResTable_entry at %d is beyond type chunk data %d",
-                         offset, dtohl(ty->header.size));
+                         offset, fromlel(ty->header.size));
                     return 0;
                 }
                 if ((offset&0x3) != 0) {
@@ -2541,14 +2541,14 @@ nope:
                 
                 const ResTable_entry* const entry = (const ResTable_entry*)
                     (((const uint8_t*)ty) + offset);
-                if (dtohs(entry->size) < sizeof(*entry)) {
-                    LOGW("ResTable_entry size %d is too small", dtohs(entry->size));
+                if (fromles(entry->size) < sizeof(*entry)) {
+                    LOGW("ResTable_entry size %d is too small", fromles(entry->size));
                     return BAD_TYPE;
                 }
 
                 TABLE_SUPER_NOISY(printf("Looking at entry #%d: want str %d, have %d\n",
-                                         i, ei, dtohl(entry->key.index)));
-                if (dtohl(entry->key.index) == (size_t)ei) {
+                                         i, ei, fromlel(entry->key.index)));
+                if (fromlel(entry->key.index) == (size_t)ei) {
                     if (outTypeSpecFlags) {
                         *outTypeSpecFlags = typeConfigs->typeSpecFlags[i];
                     }
@@ -2965,7 +2965,7 @@ bool ResTable::stringToValue(Res_value* outValue, String16* outString,
                     type.size(), package.string(), package.size(), &specFlags);
             if (rid != 0) {
                 if (enforcePrivate) {
-                    if ((dtohl(specFlags)&ResTable_typeSpec::SPEC_PUBLIC) == 0) {
+                    if ((fromlel(specFlags)&ResTable_typeSpec::SPEC_PUBLIC) == 0) {
                         if (accessor != NULL) {
                             accessor->reportError(accessorCookie, "Resource is not public.");
                         }
@@ -3120,7 +3120,7 @@ bool ResTable::stringToValue(Res_value* outValue, String16* outString,
                               package.string(), package.size(), &specFlags);
         if (rid != 0) {
             if (enforcePrivate) {
-                if ((dtohl(specFlags)&ResTable_typeSpec::SPEC_PUBLIC) == 0) {
+                if ((fromlel(specFlags)&ResTable_typeSpec::SPEC_PUBLIC) == 0) {
                     if (accessor != NULL) {
                         accessor->reportError(accessorCookie, "Attribute is not public.");
                     }
@@ -3653,11 +3653,11 @@ ssize_t ResTable::getEntry(
         if (thisType == NULL) continue;
         
         ResTable_config thisConfig;
-        thisConfig.copyFromDtoH(thisType->config);
+        thisConfig.copyFromLE(thisType->config);
 
         TABLE_GETENTRY(LOGI("Match entry 0x%x in type 0x%x (sz 0x%x): imsi:%d/%d=%d/%d lang:%c%c=%c%c cnt:%c%c=%c%c "
                             "orien:%d=%d touch:%d=%d density:%d=%d key:%d=%d inp:%d=%d nav:%d=%d w:%d=%d h:%d=%d\n",
-                           entryIndex, typeIndex+1, dtohl(thisType->config.size),
+                           entryIndex, typeIndex+1, fromlel(thisType->config.size),
                            thisConfig.mcc, thisConfig.mnc,
                            config ? config->mcc : 0, config ? config->mnc : 0,
                            thisConfig.language[0] ? thisConfig.language[0] : '-',
@@ -3694,11 +3694,11 @@ ssize_t ResTable::getEntry(
         // Check if there is the desired entry in this type.
         
         const uint8_t* const end = ((const uint8_t*)thisType)
-            + dtohl(thisType->header.size);
+            + fromlel(thisType->header.size);
         const uint32_t* const eindex = (const uint32_t*)
-            (((const uint8_t*)thisType) + dtohs(thisType->header.headerSize));
+            (((const uint8_t*)thisType) + fromles(thisType->header.headerSize));
         
-        uint32_t thisOffset = dtohl(eindex[entryIndex]);
+        uint32_t thisOffset = fromlel(eindex[entryIndex]);
         if (thisOffset == ResTable_type::NO_ENTRY) {
             TABLE_GETENTRY(LOGI("Skipping because it is not defined!\n"));
             continue;
@@ -3726,15 +3726,15 @@ ssize_t ResTable::getEntry(
         return BAD_INDEX;
     }
     
-    offset += dtohl(type->entriesStart);
+    offset += fromlel(type->entriesStart);
     TABLE_NOISY(aout << "Looking in resource table " << package->header->header
           << ", typeOff="
           << (void*)(((const char*)type)-((const char*)package->header->header))
           << ", offset=" << (void*)offset << endl);
 
-    if (offset > (dtohl(type->header.size)-sizeof(ResTable_entry))) {
+    if (offset > (fromlel(type->header.size)-sizeof(ResTable_entry))) {
         LOGW("ResTable_entry at 0x%x is beyond type chunk data 0x%x",
-             offset, dtohl(type->header.size));
+             offset, fromlel(type->header.size));
         return BAD_TYPE;
     }
     if ((offset&0x3) != 0) {
@@ -3745,8 +3745,8 @@ ssize_t ResTable::getEntry(
 
     const ResTable_entry* const entry = (const ResTable_entry*)
         (((const uint8_t*)type) + offset);
-    if (dtohs(entry->size) < sizeof(*entry)) {
-        LOGW("ResTable_entry size 0x%x is too small", dtohs(entry->size));
+    if (fromles(entry->size) < sizeof(*entry)) {
+        LOGW("ResTable_entry size 0x%x is too small", fromles(entry->size));
         return BAD_TYPE;
     }
 
@@ -3755,7 +3755,7 @@ ssize_t ResTable::getEntry(
     if (outTypeClass != NULL) {
         *outTypeClass = allTypes;
     }
-    return offset + dtohs(entry->size);
+    return offset + fromles(entry->size);
 }
 
 status_t ResTable::parsePackage(const ResTable_package* const pkg,
@@ -3768,32 +3768,32 @@ status_t ResTable::parsePackage(const ResTable_package* const pkg,
         return (mError=err);
     }
 
-    const size_t pkgSize = dtohl(pkg->header.size);
+    const size_t pkgSize = fromlel(pkg->header.size);
 
-    if (dtohl(pkg->typeStrings) >= pkgSize) {
+    if (fromlel(pkg->typeStrings) >= pkgSize) {
         LOGW("ResTable_package type strings at %p are past chunk size %p.",
-             (void*)dtohl(pkg->typeStrings), (void*)pkgSize);
+             (void*)fromlel(pkg->typeStrings), (void*)pkgSize);
         return (mError=BAD_TYPE);
     }
-    if ((dtohl(pkg->typeStrings)&0x3) != 0) {
+    if ((fromlel(pkg->typeStrings)&0x3) != 0) {
         LOGW("ResTable_package type strings at %p is not on an integer boundary.",
-             (void*)dtohl(pkg->typeStrings));
+             (void*)fromlel(pkg->typeStrings));
         return (mError=BAD_TYPE);
     }
-    if (dtohl(pkg->keyStrings) >= pkgSize) {
+    if (fromlel(pkg->keyStrings) >= pkgSize) {
         LOGW("ResTable_package key strings at %p are past chunk size %p.",
-             (void*)dtohl(pkg->keyStrings), (void*)pkgSize);
+             (void*)fromlel(pkg->keyStrings), (void*)pkgSize);
         return (mError=BAD_TYPE);
     }
-    if ((dtohl(pkg->keyStrings)&0x3) != 0) {
+    if ((fromlel(pkg->keyStrings)&0x3) != 0) {
         LOGW("ResTable_package key strings at %p is not on an integer boundary.",
-             (void*)dtohl(pkg->keyStrings));
+             (void*)fromlel(pkg->keyStrings));
         return (mError=BAD_TYPE);
     }
     
     Package* package = NULL;
     PackageGroup* group = NULL;
-    uint32_t id = dtohl(pkg->id);
+    uint32_t id = fromlel(pkg->id);
     if (id != 0 && id < 256) {
     
         package = new Package(this, header, pkg);
@@ -3806,22 +3806,22 @@ status_t ResTable::parsePackage(const ResTable_package* const pkg,
             idx = mPackageGroups.size()+1;
 
             char16_t tmpName[sizeof(pkg->name)/sizeof(char16_t)];
-            strcpy16_dtoh(tmpName, pkg->name, sizeof(pkg->name)/sizeof(char16_t));
+            strcpy16_fromle(tmpName, pkg->name, sizeof(pkg->name)/sizeof(char16_t));
             group = new PackageGroup(this, String16(tmpName), id);
             if (group == NULL) {
                 delete package;
                 return (mError=NO_MEMORY);
             }
 
-            err = package->typeStrings.setTo(base+dtohl(pkg->typeStrings),
-                                           header->dataEnd-(base+dtohl(pkg->typeStrings)));
+            err = package->typeStrings.setTo(base+fromlel(pkg->typeStrings),
+                                           header->dataEnd-(base+fromlel(pkg->typeStrings)));
             if (err != NO_ERROR) {
                 delete group;
                 delete package;
                 return (mError=err);
             }
-            err = package->keyStrings.setTo(base+dtohl(pkg->keyStrings),
-                                          header->dataEnd-(base+dtohl(pkg->keyStrings)));
+            err = package->keyStrings.setTo(base+fromlel(pkg->keyStrings),
+                                          header->dataEnd-(base+fromlel(pkg->keyStrings)));
             if (err != NO_ERROR) {
                 delete group;
                 delete package;
@@ -3857,15 +3857,15 @@ status_t ResTable::parsePackage(const ResTable_package* const pkg,
     
     const ResChunk_header* chunk =
         (const ResChunk_header*)(((const uint8_t*)pkg)
-                                 + dtohs(pkg->header.headerSize));
-    const uint8_t* endPos = ((const uint8_t*)pkg) + dtohl(pkg->header.size);
+                                 + fromles(pkg->header.headerSize));
+    const uint8_t* endPos = ((const uint8_t*)pkg) + fromlel(pkg->header.size);
     while (((const uint8_t*)chunk) <= (endPos-sizeof(ResChunk_header)) &&
-           ((const uint8_t*)chunk) <= (endPos-dtohl(chunk->size))) {
+           ((const uint8_t*)chunk) <= (endPos-fromlel(chunk->size))) {
         TABLE_NOISY(LOGV("PackageChunk: type=0x%x, headerSize=0x%x, size=0x%x, pos=%p\n",
-                         dtohs(chunk->type), dtohs(chunk->headerSize), dtohl(chunk->size),
+                         fromles(chunk->type), fromles(chunk->headerSize), fromlel(chunk->size),
                          (void*)(((const uint8_t*)chunk) - ((const uint8_t*)header->header))));
-        const size_t csize = dtohl(chunk->size);
-        const uint16_t ctype = dtohs(chunk->type);
+        const size_t csize = fromlel(chunk->size);
+        const uint16_t ctype = fromles(chunk->type);
         if (ctype == RES_TABLE_TYPE_SPEC_TYPE) {
             const ResTable_typeSpec* typeSpec = (const ResTable_typeSpec*)(chunk);
             err = validate_chunk(&typeSpec->header, sizeof(*typeSpec),
@@ -3874,20 +3874,20 @@ status_t ResTable::parsePackage(const ResTable_package* const pkg,
                 return (mError=err);
             }
             
-            const size_t typeSpecSize = dtohl(typeSpec->header.size);
+            const size_t typeSpecSize = fromlel(typeSpec->header.size);
             
             LOAD_TABLE_NOISY(printf("TypeSpec off %p: type=0x%x, headerSize=0x%x, size=%p\n",
                                     (void*)(base-(const uint8_t*)chunk),
-                                    dtohs(typeSpec->header.type),
-                                    dtohs(typeSpec->header.headerSize),
+                                    fromles(typeSpec->header.type),
+                                    fromles(typeSpec->header.headerSize),
                                     (void*)typeSize));
             // look for block overrun or int overflow when multiplying by 4
-            if ((dtohl(typeSpec->entryCount) > (INT32_MAX/sizeof(uint32_t))
-                    || dtohs(typeSpec->header.headerSize)+(sizeof(uint32_t)*dtohl(typeSpec->entryCount))
+            if ((fromlel(typeSpec->entryCount) > (INT32_MAX/sizeof(uint32_t))
+                    || fromles(typeSpec->header.headerSize)+(sizeof(uint32_t)*fromlel(typeSpec->entryCount))
                     > typeSpecSize)) {
                 LOGW("ResTable_typeSpec entry index to %p extends beyond chunk end %p.",
-                     (void*)(dtohs(typeSpec->header.headerSize)
-                             +(sizeof(uint32_t)*dtohl(typeSpec->entryCount))),
+                     (void*)(fromles(typeSpec->header.headerSize)
+                             +(sizeof(uint32_t)*fromlel(typeSpec->entryCount))),
                      (void*)typeSpecSize);
                 return (mError=BAD_TYPE);
             }
@@ -3902,15 +3902,15 @@ status_t ResTable::parsePackage(const ResTable_package* const pkg,
             }
             Type* t = package->types[typeSpec->id-1];
             if (t == NULL) {
-                t = new Type(header, package, dtohl(typeSpec->entryCount));
+                t = new Type(header, package, fromlel(typeSpec->entryCount));
                 package->types.editItemAt(typeSpec->id-1) = t;
-            } else if (dtohl(typeSpec->entryCount) != t->entryCount) {
+            } else if (fromlel(typeSpec->entryCount) != t->entryCount) {
                 LOGW("ResTable_typeSpec entry count inconsistent: given %d, previously %d",
-                    (int)dtohl(typeSpec->entryCount), (int)t->entryCount);
+                    (int)fromlel(typeSpec->entryCount), (int)t->entryCount);
                 return (mError=BAD_TYPE);
             }
             t->typeSpecFlags = (const uint32_t*)(
-                    ((const uint8_t*)typeSpec) + dtohs(typeSpec->header.headerSize));
+                    ((const uint8_t*)typeSpec) + fromles(typeSpec->header.headerSize));
             t->typeSpec = typeSpec;
             
         } else if (ctype == RES_TABLE_TYPE_TYPE) {
@@ -3921,25 +3921,25 @@ status_t ResTable::parsePackage(const ResTable_package* const pkg,
                 return (mError=err);
             }
             
-            const size_t typeSize = dtohl(type->header.size);
+            const size_t typeSize = fromlel(type->header.size);
             
             LOAD_TABLE_NOISY(printf("Type off %p: type=0x%x, headerSize=0x%x, size=%p\n",
                                     (void*)(base-(const uint8_t*)chunk),
-                                    dtohs(type->header.type),
-                                    dtohs(type->header.headerSize),
+                                    fromles(type->header.type),
+                                    fromles(type->header.headerSize),
                                     (void*)typeSize));
-            if (dtohs(type->header.headerSize)+(sizeof(uint32_t)*dtohl(type->entryCount))
+            if (fromles(type->header.headerSize)+(sizeof(uint32_t)*fromlel(type->entryCount))
                 > typeSize) {
                 LOGW("ResTable_type entry index to %p extends beyond chunk end %p.",
-                     (void*)(dtohs(type->header.headerSize)
-                             +(sizeof(uint32_t)*dtohl(type->entryCount))),
+                     (void*)(fromles(type->header.headerSize)
+                             +(sizeof(uint32_t)*fromlel(type->entryCount))),
                      (void*)typeSize);
                 return (mError=BAD_TYPE);
             }
-            if (dtohl(type->entryCount) != 0
-                && dtohl(type->entriesStart) > (typeSize-sizeof(ResTable_entry))) {
+            if (fromlel(type->entryCount) != 0
+                && fromlel(type->entriesStart) > (typeSize-sizeof(ResTable_entry))) {
                 LOGW("ResTable_type entriesStart at %p extends beyond chunk end %p.",
-                     (void*)dtohl(type->entriesStart), (void*)typeSize);
+                     (void*)fromlel(type->entriesStart), (void*)typeSize);
                 return (mError=BAD_TYPE);
             }
             if (type->id == 0) {
@@ -3952,17 +3952,17 @@ status_t ResTable::parsePackage(const ResTable_package* const pkg,
             }
             Type* t = package->types[type->id-1];
             if (t == NULL) {
-                t = new Type(header, package, dtohl(type->entryCount));
+                t = new Type(header, package, fromlel(type->entryCount));
                 package->types.editItemAt(type->id-1) = t;
-            } else if (dtohl(type->entryCount) != t->entryCount) {
+            } else if (fromlel(type->entryCount) != t->entryCount) {
                 LOGW("ResTable_type entry count inconsistent: given %d, previously %d",
-                    (int)dtohl(type->entryCount), (int)t->entryCount);
+                    (int)fromlel(type->entryCount), (int)t->entryCount);
                 return (mError=BAD_TYPE);
             }
             
             TABLE_GETENTRY(
                 ResTable_config thisConfig;
-                thisConfig.copyFromDtoH(type->config);
+                thisConfig.copyFromLE(type->config);
                 LOGI("Adding config to type %d: imsi:%d/%d lang:%c%c cnt:%c%c "
                      "orien:%d touch:%d density:%d key:%d inp:%d nav:%d w:%d h:%d\n",
                       type->id,
@@ -4133,7 +4133,7 @@ void ResTable::print(bool inclValues) const
                             CHAR16_TO_CSTR(resName.package, resName.packageLen),
                             CHAR16_TO_CSTR(resName.type, resName.typeLen),
                             CHAR16_TO_CSTR(resName.name, resName.nameLen),
-                            dtohl(typeConfigs->typeSpecFlags[entryIndex]));
+                            fromlel(typeConfigs->typeSpecFlags[entryIndex]));
                     }
                 }
                 for (size_t configIndex=0; configIndex<NTC; configIndex++) {
@@ -4143,7 +4143,7 @@ void ResTable::print(bool inclValues) const
                         continue;
                     }
                     char density[16];
-                    uint16_t dval = dtohs(type->config.density);
+                    uint16_t dval = fromles(type->config.density);
                     if (dval == ResTable_config::DENSITY_DEFAULT) {
                         strcpy(density, "def");
                     } else if (dval == ResTable_config::DENSITY_NONE) {
@@ -4153,10 +4153,10 @@ void ResTable::print(bool inclValues) const
                     }
                     printf("      config %d", (int)configIndex);
                     if (type->config.mcc != 0) {
-                        printf(" mcc=%d", dtohs(type->config.mcc));
+                        printf(" mcc=%d", fromles(type->config.mcc));
                     }
                     if (type->config.mnc != 0) {
-                        printf(" mnc=%d", dtohs(type->config.mnc));
+                        printf(" mnc=%d", fromles(type->config.mnc));
                     }
                     if (type->config.locale != 0) {
                         printf(" lang=%c%c cnt=%c%c",
@@ -4301,25 +4301,25 @@ void ResTable::print(bool inclValues) const
                         }
                     }
                     if (type->config.screenWidth != 0) {
-                        printf(" w=%d", dtohs(type->config.screenWidth));
+                        printf(" w=%d", fromles(type->config.screenWidth));
                     }
                     if (type->config.screenHeight != 0) {
-                        printf(" h=%d", dtohs(type->config.screenHeight));
+                        printf(" h=%d", fromles(type->config.screenHeight));
                     }
                     if (type->config.sdkVersion != 0) {
-                        printf(" sdk=%d", dtohs(type->config.sdkVersion));
+                        printf(" sdk=%d", fromles(type->config.sdkVersion));
                     }
                     if (type->config.minorVersion != 0) {
-                        printf(" mver=%d", dtohs(type->config.minorVersion));
+                        printf(" mver=%d", fromles(type->config.minorVersion));
                     }
                     printf("\n");
-                    size_t entryCount = dtohl(type->entryCount);
-                    uint32_t entriesStart = dtohl(type->entriesStart);
+                    size_t entryCount = fromlel(type->entryCount);
+                    uint32_t entriesStart = fromlel(type->entriesStart);
                     if ((entriesStart&0x3) != 0) {
                         printf("      NON-INTEGER ResTable_type entriesStart OFFSET: %p\n", (void*)entriesStart);
                         continue;
                     }
-                    uint32_t typeSize = dtohl(type->header.size);
+                    uint32_t typeSize = fromlel(type->header.size);
                     if ((typeSize&0x3) != 0) {
                         printf("      NON-INTEGER ResTable_type header.size: %p\n", (void*)typeSize);
                         continue;
@@ -4327,11 +4327,11 @@ void ResTable::print(bool inclValues) const
                     for (size_t entryIndex=0; entryIndex<entryCount; entryIndex++) {
                         
                         const uint8_t* const end = ((const uint8_t*)type)
-                            + dtohl(type->header.size);
+                            + fromlel(type->header.size);
                         const uint32_t* const eindex = (const uint32_t*)
-                            (((const uint8_t*)type) + dtohs(type->header.headerSize));
+                            (((const uint8_t*)type) + fromles(type->header.headerSize));
                         
-                        uint32_t thisOffset = dtohl(eindex[entryIndex]);
+                        uint32_t thisOffset = fromlel(eindex[entryIndex]);
                         if (thisOffset == ResTable_type::NO_ENTRY) {
                             continue;
                         }
@@ -4364,7 +4364,7 @@ void ResTable::print(bool inclValues) const
                             continue;
                         }
                         
-                        uint16_t esize = dtohs(ent->size);
+                        uint16_t esize = fromles(ent->size);
                         if ((esize&0x3) != 0) {
                             printf("NON-INTEGER ResTable_entry SIZE: %p\n", (void*)esize);
                             continue;
@@ -4379,19 +4379,19 @@ void ResTable::print(bool inclValues) const
                         const Res_value* valuePtr = NULL;
                         const ResTable_map_entry* bagPtr = NULL;
                         Res_value value;
-                        if ((dtohs(ent->flags)&ResTable_entry::FLAG_COMPLEX) != 0) {
+                        if ((fromles(ent->flags)&ResTable_entry::FLAG_COMPLEX) != 0) {
                             printf("<bag>");
                             bagPtr = (const ResTable_map_entry*)ent;
                         } else {
                             valuePtr = (const Res_value*)
                                 (((const uint8_t*)ent) + esize);
-                            value.copyFrom_dtoh(*valuePtr);
+                            value.copyFromLE(*valuePtr);
                             printf("t=0x%02x d=0x%08x (s=0x%04x r=0x%02x)",
                                    (int)value.dataType, (int)value.data,
                                    (int)value.size, (int)value.res0);
                         }
                         
-                        if ((dtohs(ent->flags)&ResTable_entry::FLAG_PUBLIC) != 0) {
+                        if ((fromles(ent->flags)&ResTable_entry::FLAG_PUBLIC) != 0) {
                             printf(" (PUBLIC)");
                         }
                         printf("\n");
@@ -4401,17 +4401,17 @@ void ResTable::print(bool inclValues) const
                                 printf("          ");
                                 print_value(pkg, value);
                             } else if (bagPtr != NULL) {
-                                const int N = dtohl(bagPtr->count);
+                                const int N = fromlel(bagPtr->count);
                                 const ResTable_map* mapPtr = (const ResTable_map*)
                                         (((const uint8_t*)ent) + esize);
                                 printf("          Parent=0x%08x, Count=%d\n",
-                                    dtohl(bagPtr->parent.ident), N);
+                                    fromlel(bagPtr->parent.ident), N);
                                 for (int i=0; i<N; i++) {
                                     printf("          #%i (Key=0x%08x): ",
-                                        i, dtohl(mapPtr->name.ident));
-                                    value.copyFrom_dtoh(mapPtr->value);
+                                        i, fromlel(mapPtr->name.ident));
+                                    value.copyFromLE(mapPtr->value);
                                     print_value(pkg, value);
-                                    const size_t size = dtohs(mapPtr->value.size);
+                                    const size_t size = fromles(mapPtr->value.size);
                                     mapPtr = (ResTable_map*)(((const uint8_t*)mapPtr)
                                             + size + sizeof(*mapPtr)-sizeof(mapPtr->value));
                                 }

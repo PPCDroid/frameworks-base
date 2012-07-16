@@ -329,7 +329,7 @@ struct Res_value
     // The data for this item, as interpreted according to dataType.
     uint32_t data;
 
-    void copyFrom_dtoh(const Res_value& src);
+    void copyFromLE(const Res_value& src);
 };
 
 /**
@@ -973,7 +973,7 @@ struct ResTable_config
     };
     
     inline void copyFromDeviceNoSwap(const ResTable_config& o) {
-        const size_t size = dtohl(o.size);
+        const size_t size = fromlel(o.size);
         if (size >= sizeof(ResTable_config)) {
             *this = o;
         } else {
@@ -982,27 +982,27 @@ struct ResTable_config
         }
     }
     
-    inline void copyFromDtoH(const ResTable_config& o) {
+    inline void copyFromLE(const ResTable_config& o) {
         copyFromDeviceNoSwap(o);
         size = sizeof(ResTable_config);
-        mcc = dtohs(mcc);
-        mnc = dtohs(mnc);
-        density = dtohs(density);
-        screenWidth = dtohs(screenWidth);
-        screenHeight = dtohs(screenHeight);
-        sdkVersion = dtohs(sdkVersion);
-        minorVersion = dtohs(minorVersion);
+        mcc = fromles(mcc);
+        mnc = fromles(mnc);
+        density = fromles(density);
+        screenWidth = fromles(screenWidth);
+        screenHeight = fromles(screenHeight);
+        sdkVersion = fromles(sdkVersion);
+        minorVersion = fromles(minorVersion);
     }
     
-    inline void swapHtoD() {
-        size = htodl(size);
-        mcc = htods(mcc);
-        mnc = htods(mnc);
-        density = htods(density);
-        screenWidth = htods(screenWidth);
-        screenHeight = htods(screenHeight);
-        sdkVersion = htods(sdkVersion);
-        minorVersion = htods(minorVersion);
+    inline void swapToLE() {
+        size = tolel(size);
+        mcc = toles(mcc);
+        mnc = toles(mnc);
+        density = toles(density);
+        screenWidth = toles(screenWidth);
+        screenHeight = toles(screenHeight);
+        sdkVersion = toles(sdkVersion);
+        minorVersion = toles(minorVersion);
     }
     
     inline int compare(const ResTable_config& o) const {

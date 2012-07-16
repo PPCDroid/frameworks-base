@@ -10,10 +10,10 @@
 
 #define NOISY(x) //x
 
-void strcpy16_htod(uint16_t* dst, const uint16_t* src)
+void strcpy16_tole(uint16_t* dst, const uint16_t* src)
 {
     while (*src) {
-        char16_t s = htods(*src);
+        char16_t s = toles(*src);
         *dst++ = s;
         src++;
     }
@@ -268,9 +268,9 @@ status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
         } else {
             uint16_t* strings = (uint16_t*)dat;
 
-            ENCODE_LENGTH(strings, sizeof(uint16_t), strSize, htods)
+            ENCODE_LENGTH(strings, sizeof(uint16_t), strSize, toles)
 
-            strcpy16_htod(strings, ent.value);
+            strcpy16_tole(strings, ent.value);
         }
 
         strPos += totalSize;
@@ -306,12 +306,12 @@ status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
         }
         ResStringPool_span* span = (ResStringPool_span*)(dat+preSize+styPos);
         for (size_t i=0; i<N; i++) {
-            span->name.index = htodl(ent.spans[i].span.name.index);
-            span->firstChar = htodl(ent.spans[i].span.firstChar);
-            span->lastChar = htodl(ent.spans[i].span.lastChar);
+            span->name.index = tolel(ent.spans[i].span.name.index);
+            span->firstChar = tolel(ent.spans[i].span.firstChar);
+            span->lastChar = tolel(ent.spans[i].span.lastChar);
             span++;
         }
-        span->name.index = htodl(ResStringPool_span::END);
+        span->name.index = tolel(ResStringPool_span::END);
 
         styPos += totalSize;
     }
@@ -328,7 +328,7 @@ status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
         }
         uint32_t* p = (uint32_t*)(dat+preSize+styPos);
         while (extra > 0) {
-            *p++ = htodl(ResStringPool_span::END);
+            *p++ = tolel(ResStringPool_span::END);
             extra -= sizeof(uint32_t);
         }
         styPos += extra;
@@ -343,19 +343,19 @@ status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
         return NO_MEMORY;
     }
     memset(header, 0, sizeof(*header));
-    header->header.type = htods(RES_STRING_POOL_TYPE);
-    header->header.headerSize = htods(sizeof(*header));
-    header->header.size = htodl(pool->getSize());
-    header->stringCount = htodl(ENTRIES);
-    header->styleCount = htodl(STYLES);
+    header->header.type = toles(RES_STRING_POOL_TYPE);
+    header->header.headerSize = toles(sizeof(*header));
+    header->header.size = tolel(pool->getSize());
+    header->stringCount = tolel(ENTRIES);
+    header->styleCount = tolel(STYLES);
     if (mSorted) {
-        header->flags |= htodl(ResStringPool_header::SORTED_FLAG);
+        header->flags |= tolel(ResStringPool_header::SORTED_FLAG);
     }
     if (mUTF8) {
-        header->flags |= htodl(ResStringPool_header::UTF8_FLAG);
+        header->flags |= tolel(ResStringPool_header::UTF8_FLAG);
     }
-    header->stringsStart = htodl(preSize);
-    header->stylesStart = htodl(STYLES > 0 ? (preSize+strPos) : 0);
+    header->stringsStart = tolel(preSize);
+    header->stylesStart = tolel(STYLES > 0 ? (preSize+strPos) : 0);
 
     // Write string index array.
 
@@ -365,12 +365,12 @@ status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
             entry& ent = const_cast<entry&>(entryAt(i));
             ent.indices.clear();
             ent.indices.add(i);
-            *index++ = htodl(ent.offset);
+            *index++ = tolel(ent.offset);
         }
     } else {
         for (i=0; i<ENTRIES; i++) {
             entry& ent = mEntries.editItemAt(mEntryArray[i]);
-            *index++ = htodl(ent.offset);
+            *index++ = tolel(ent.offset);
             NOISY(printf("Writing entry #%d: \"%s\" ent=%d off=%d\n", i,
                     String8(ent.value).string(),
                     mEntryArray[i], ent.offset));
@@ -385,7 +385,7 @@ status_t StringPool::writeStringBlock(const sp<AaptFile>& pool)
         }
     } else {
         for (i=0; i<STYLES; i++) {
-            *index++ = htodl(mEntryStyleArray[i].offset);
+            *index++ = tolel(mEntryStyleArray[i].offset);
         }
     }
 

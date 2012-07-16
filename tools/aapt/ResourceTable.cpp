@@ -1932,7 +1932,7 @@ uint32_t ResourceTable::getResId(const String16& package,
                            &specFlags);
     if (rid != 0) {
         if (onlyPublic) {
-            if ((dtohl(specFlags) & ResTable_typeSpec::SPEC_PUBLIC) == 0) {
+            if ((fromlel(specFlags) & ResTable_typeSpec::SPEC_PUBLIC) == 0) {
                 return 0;
             }
         }
@@ -2698,10 +2698,10 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
             return NO_MEMORY;
         }
         memset(header, 0, sizeof(*header));
-        header->header.type = htods(RES_TABLE_PACKAGE_TYPE);
-        header->header.headerSize = htods(sizeof(*header));
-        header->id = htodl(p->getAssignedId());
-        strcpy16_htod(header->name, p->getName().string());
+        header->header.type = toles(RES_TABLE_PACKAGE_TYPE);
+        header->header.headerSize = toles(sizeof(*header));
+        header->id = tolel(p->getAssignedId());
+        strcpy16_tole(header->name, p->getName().string());
 
         // Write the string blocks.
         const size_t typeStringsStart = data->getSize();
@@ -2749,11 +2749,11 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
                     return NO_MEMORY;
                 }
                 memset(tsHeader, 0, sizeof(*tsHeader));
-                tsHeader->header.type = htods(RES_TABLE_TYPE_SPEC_TYPE);
-                tsHeader->header.headerSize = htods(sizeof(*tsHeader));
-                tsHeader->header.size = htodl(typeSpecSize);
+                tsHeader->header.type = toles(RES_TABLE_TYPE_SPEC_TYPE);
+                tsHeader->header.headerSize = toles(sizeof(*tsHeader));
+                tsHeader->header.size = tolel(typeSpecSize);
                 tsHeader->id = ti+1;
-                tsHeader->entryCount = htodl(N);
+                tsHeader->entryCount = tolel(N);
                 
                 uint32_t* typeSpecFlags = (uint32_t*)
                     (((uint8_t*)data->editData())
@@ -2763,7 +2763,7 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
                 for (size_t ei=0; ei<N; ei++) {
                     sp<ConfigList> cl = t->getOrderedConfigs().itemAt(ei);
                     if (cl->getPublic()) {
-                        typeSpecFlags[ei] |= htodl(ResTable_typeSpec::SPEC_PUBLIC);
+                        typeSpecFlags[ei] |= tolel(ResTable_typeSpec::SPEC_PUBLIC);
                     }
                     const size_t CN = cl->getEntries().size();
                     for (size_t ci=0; ci<CN; ci++) {
@@ -2774,7 +2774,7 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
                             if (!filter.match(cl->getEntries().keyAt(cj))) {
                                 continue;
                             }
-                            typeSpecFlags[ei] |= htodl(
+                            typeSpecFlags[ei] |= tolel(
                                 cl->getEntries().keyAt(ci).diff(cl->getEntries().keyAt(cj)));
                         }
                     }
@@ -2822,11 +2822,11 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
                 }
 
                 memset(tHeader, 0, sizeof(*tHeader));
-                tHeader->header.type = htods(RES_TABLE_TYPE_TYPE);
-                tHeader->header.headerSize = htods(sizeof(*tHeader));
+                tHeader->header.type = toles(RES_TABLE_TYPE_TYPE);
+                tHeader->header.headerSize = toles(sizeof(*tHeader));
                 tHeader->id = ti+1;
-                tHeader->entryCount = htodl(N);
-                tHeader->entriesStart = htodl(typeSize);
+                tHeader->entryCount = tolel(N);
+                tHeader->entriesStart = tolel(typeSize);
                 tHeader->config = config;
                 NOISY(printf("Writing type %d config: imsi:%d/%d lang:%c%c cnt:%c%c "
                      "orien:%d ui:%d touch:%d density:%d key:%d inp:%d nav:%d w:%d h:%d\n",
@@ -2845,7 +2845,7 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
                       tHeader->config.navigation,
                       tHeader->config.screenWidth,
                       tHeader->config.screenHeight));
-                tHeader->config.swapHtoD();
+                tHeader->config.swapToLE();
 
                 // Build the entries inside of this type.
                 for (size_t ei=0; ei<N; ei++) {
@@ -2857,7 +2857,7 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
                         (((uint8_t*)data->editData())
                             + typeStart + sizeof(ResTable_type));
                     if (e != NULL) {
-                        index[ei] = htodl(data->getSize()-typeStart-typeSize);
+                        index[ei] = tolel(data->getSize()-typeStart-typeSize);
 
                         // Create the entry.
                         ssize_t amt = e->flatten(bundle, data, cl->getPublic());
@@ -2865,24 +2865,24 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
                             return amt;
                         }
                     } else {
-                        index[ei] = htodl(ResTable_type::NO_ENTRY);
+                        index[ei] = tolel(ResTable_type::NO_ENTRY);
                     }
                 }
 
                 // Fill in the rest of the type information.
                 tHeader = (ResTable_type*)
                     (((uint8_t*)data->editData()) + typeStart);
-                tHeader->header.size = htodl(data->getSize()-typeStart);
+                tHeader->header.size = tolel(data->getSize()-typeStart);
             }
         }
 
         // Fill in the rest of the package information.
         header = (ResTable_package*)data->editData();
-        header->header.size = htodl(data->getSize());
-        header->typeStrings = htodl(typeStringsStart);
-        header->lastPublicType = htodl(p->getTypeStrings().size());
-        header->keyStrings = htodl(keyStringsStart);
-        header->lastPublicKey = htodl(p->getKeyStrings().size());
+        header->header.size = tolel(data->getSize());
+        header->typeStrings = tolel(typeStringsStart);
+        header->lastPublicType = tolel(p->getTypeStrings().size());
+        header->keyStrings = tolel(keyStringsStart);
+        header->lastPublicKey = tolel(p->getKeyStrings().size());
 
         flatPackages.add(data);
     }
@@ -2894,9 +2894,9 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
         // blah
         ResTable_header header;
         memset(&header, 0, sizeof(header));
-        header.header.type = htods(RES_TABLE_TYPE);
-        header.header.headerSize = htods(sizeof(header));
-        header.packageCount = htodl(flatPackages.size());
+        header.header.type = toles(RES_TABLE_TYPE);
+        header.header.headerSize = toles(sizeof(header));
+        header.packageCount = tolel(flatPackages.size());
         status_t err = dest->writeData(&header, sizeof(header));
         if (err != NO_ERROR) {
             fprintf(stderr, "ERROR: out of memory creating ResTable_header\n");
@@ -2928,7 +2928,7 @@ status_t ResourceTable::flatten(Bundle* bundle, const sp<AaptFile>& dest)
 
     ResTable_header* header = (ResTable_header*)
         (((uint8_t*)dest->getData()) + dataStart);
-    header->header.size = htodl(dest->getSize() - dataStart);
+    header->header.size = tolel(dest->getSize() - dataStart);
 
     NOISY(aout << "Resource table:"
           << HexDump(dest->getData(), dest->getSize()) << endl);
@@ -3239,16 +3239,16 @@ ssize_t ResourceTable::Entry::flatten(Bundle* bundle, const sp<AaptFile>& data, 
     size_t amt = 0;
     ResTable_entry header;
     memset(&header, 0, sizeof(header));
-    header.size = htods(sizeof(header));
+    header.size = toles(sizeof(header));
     const type ty = this != NULL ? mType : TYPE_ITEM;
     if (this != NULL) {
         if (ty == TYPE_BAG) {
-            header.flags |= htods(header.FLAG_COMPLEX);
+            header.flags |= toles(header.FLAG_COMPLEX);
         }
         if (isPublic) {
-            header.flags |= htods(header.FLAG_PUBLIC);
+            header.flags |= toles(header.FLAG_PUBLIC);
         }
-        header.key.index = htodl(mNameIndex);
+        header.key.index = tolel(mNameIndex);
     }
     if (ty != TYPE_BAG) {
         status_t err = data->writeData(&header, sizeof(header));
@@ -3260,10 +3260,10 @@ ssize_t ResourceTable::Entry::flatten(Bundle* bundle, const sp<AaptFile>& data, 
         const Item& it = mItem;
         Res_value par;
         memset(&par, 0, sizeof(par));
-        par.size = htods(it.parsedValue.size);
+        par.size = toles(it.parsedValue.size);
         par.dataType = it.parsedValue.dataType;
         par.res0 = it.parsedValue.res0;
-        par.data = htodl(it.parsedValue.data);
+        par.data = tolel(it.parsedValue.data);
         #if 0
         printf("Writing item (%s): type=%d, data=0x%x, res0=0x%x\n",
                String8(mName).string(), it.parsedValue.dataType,
@@ -3288,9 +3288,9 @@ ssize_t ResourceTable::Entry::flatten(Bundle* bundle, const sp<AaptFile>& data, 
         
         ResTable_map_entry mapHeader;
         memcpy(&mapHeader, &header, sizeof(header));
-        mapHeader.size = htods(sizeof(mapHeader));
-        mapHeader.parent.ident = htodl(mParentId);
-        mapHeader.count = htodl(N);
+        mapHeader.size = toles(sizeof(mapHeader));
+        mapHeader.parent.ident = tolel(mParentId);
+        mapHeader.count = tolel(N);
         status_t err = data->writeData(&mapHeader, sizeof(mapHeader));
         if (err != NO_ERROR) {
             fprintf(stderr, "ERROR: out of memory creating ResTable_entry\n");
@@ -3300,11 +3300,11 @@ ssize_t ResourceTable::Entry::flatten(Bundle* bundle, const sp<AaptFile>& data, 
         for (i=0; i<N; i++) {
             const Item& it = *items.valueAt(i);
             ResTable_map map;
-            map.name.ident = htodl(it.bagKeyId);
-            map.value.size = htods(it.parsedValue.size);
+            map.name.ident = tolel(it.bagKeyId);
+            map.value.size = toles(it.parsedValue.size);
             map.value.dataType = it.parsedValue.dataType;
             map.value.res0 = it.parsedValue.res0;
-            map.value.data = htodl(it.parsedValue.data);
+            map.value.data = tolel(it.parsedValue.data);
             err = data->writeData(&map, sizeof(map));
             if (err != NO_ERROR) {
                 fprintf(stderr, "ERROR: out of memory creating Res_value\n");
