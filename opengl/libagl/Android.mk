@@ -34,6 +34,11 @@ ifeq ($(TARGET_ARCH),arm)
 	LOCAL_CFLAGS += -fstrict-aliasing
 endif
 
+ifeq ($(TARGET_ARCH),powerpc)
+	LOCAL_SRC_FILES += fixed_asm_ppc.S
+	LOCAL_CFLAGS += -fstrict-aliasing
+endif
+
 ifeq ($(ARCH_ARM_HAVE_TLS_REGISTER),true)
     LOCAL_CFLAGS += -DHAVE_ARM_TLS_REGISTER
 endif
