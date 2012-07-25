@@ -86,7 +86,7 @@ static int _delete_dir_contents(DIR *d, const char *ignore)
             /* skip the ignore name if provided */
         if (ignore && !strcmp(name, ignore)) continue;
 
-        if (de->d_type == DT_DIR) {
+        if (de->d_type == DT_DIR || de->d_type == DT_UNKNOWN) {
             int r, subfd;
             DIR *subdir;
 
@@ -99,6 +99,9 @@ static int _delete_dir_contents(DIR *d, const char *ignore)
             subfd = openat(dfd, name, O_RDONLY | O_DIRECTORY);
             if (subfd < 0) {
                 LOGE("Couldn't openat %s: %s\n", name, strerror(errno));
+		/* it can be not a directory, so try it */
+                if (de->d_type == DT_UNKNOWN)
+                    goto ndir;
                 result = -1;
                 continue;
             }
@@ -114,10 +117,11 @@ static int _delete_dir_contents(DIR *d, const char *ignore)
             }
             closedir(subdir);
             if (unlinkat(dfd, name, AT_REMOVEDIR) < 0) {
-                LOGE("Couldn't unlinkat %s: %s\n", name, strerror(errno));
+                LOGE("Couldn't unlinkat dir %s: %s\n", name, strerror(errno));
                 result = -1;
             }
         } else {
+ndir:
             if (unlinkat(dfd, name, 0) < 0) {
                 LOGE("Couldn't unlinkat %s: %s\n", name, strerror(errno));
                 result = -1;

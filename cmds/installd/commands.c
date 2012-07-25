@@ -968,7 +968,7 @@ int linklib(const char* dataDir, const char* asecLibDir)
     }
 
     if (lstat(libdir, &libStat) < 0) {
-        LOGE("couldn't stat lib dir: %s\n", strerror(errno));
+        LOGE("couldn't stat lib dir '%s': %s\n", libdir, strerror(errno));
         rc = -1;
         goto out;
     }
@@ -1045,7 +1045,7 @@ int unlinklib(const char* dataDir)
     }
 
     if (lstat(libdir, &libStat) < 0) {
-        LOGE("couldn't stat lib dir: %s\n", strerror(errno));
+        LOGE("couldn't stat lib dir '%s': %s\n", libdir, strerror(errno));
         rc = -1;
         goto out;
     }
